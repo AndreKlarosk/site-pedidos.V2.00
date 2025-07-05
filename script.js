@@ -394,13 +394,5 @@ document.addEventListener('keydown', (e) => {
         window.location.href = 'admin.html';
     }
 });
-});
-filtroCategoriaEl.addEventListener('change', filtrarErenderizar);
-consultarPedidoBtn.addEventListener('click', consultarPedido);
-document.addEventListener('keydown', (e) => {
-    if (e.altKey && e.key.toLowerCase() === 'b') {
-        window.location.href = 'admin.html';
-    }
-});
 
 
