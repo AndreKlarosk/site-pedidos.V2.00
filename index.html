@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agro Ferragem</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        // Configuração do Tailwind para usar as cores da sua logo
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#F97316', // Laranja
+                        'primary-hover': '#EA580C',
+                        'secondary': '#16A34A', // Verde
+                        'secondary-hover': '#15803D',
+                        'accent': '#DC2626', // Vermelho
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- Cabeçalho Fixo -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="container mx-auto p-4 flex justify-between items-center">
+            <a href="index.html">
+                <img src="logo.png" alt="Logo da Loja" class="h-20"> 
+            </a>
+            <a href="carrinho.html" class="relative">
+                <i class="fa-solid fa-shopping-cart text-3xl text-gray-500 hover:text-primary transition-colors"></i>
+                <span id="cart-counter" class="absolute -top-2 -right-3 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-900">Consulte seu Pedido</h2>
+            <div class="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
+                <input type="text" id="consulta-id-input" placeholder="Digite o ID do seu pedido" class="flex-grow px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                <button id="consultar-pedido-btn" class="bg-primary text-white font-bold px-6 py-2 rounded-md hover:bg-primary-hover transition-colors">Consultar</button>
+            </div>
+            <div id="resultado-consulta" class="mt-4 text-center"></div>
+        </section>
+
+        <main>
+            <section>
+                <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                    <div class="relative flex-grow">
+                        <input type="text" id="pesquisa-produto" placeholder="Pesquisar por nome..." class="w-full px-4 py-3 pl-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                    </div>
+                    <div class="flex-shrink-0">
+                         <select id="filtro-categoria" class="w-full sm:w-auto px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary h-full"></select>
+                    </div>
+                </div>
+                <h2 class="text-2xl font-bold mb-4 border-b-2 border-primary pb-2 text-gray-900">Nossos Produtos</h2>
+                <div id="produtos-lista" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <p id="loading-produtos" class="text-gray-500 col-span-full">Carregando produtos...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL DE DETALHES DO PRODUTO -->
+    <div id="modal-produto" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg md:max-w-3xl max-h-[90vh] flex flex-col">
+            <header class="p-4 border-b flex justify-between items-center">
+                <h2 id="modal-produto-nome" class="text-xl md:text-2xl font-bold text-gray-900">Nome do Produto</h2>
+                <button id="fechar-modal-produto" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            </header>
+            <main class="p-6 overflow-y-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="text-center flex items-center justify-center">
+                        <i id="modal-produto-icone" class="text-9xl text-primary"></i>
+                    </div>
+                    <div>
+                        <p id="modal-produto-categoria" class="text-sm font-semibold text-primary mb-2"></p>
+                        <p id="modal-produto-preco" class="text-3xl font-bold text-gray-900 mb-4"></p>
+                        <p id="modal-produto-descricao" class="text-gray-700 mb-6"></p>
+                        <button id="modal-add-carrinho-btn" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-md hover:bg-primary-hover flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-cart-plus"></i> Adicionar ao Carrinho
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold border-t pt-4">Produtos Relacionados</h3>
+                    <div id="produtos-relacionados-lista" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <!-- Sugestões de produtos aqui -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, query, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, query, doc, getDoc };
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

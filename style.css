@@ -1,0 +1,23 @@
+/* Adiciona uma transição suave para as cores e transformações */
+button, a {
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+}
+
+/* Animação para o ícone do carrinho */
+.cart-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Gradiente de fundo sutil para dar mais vida à página */
+/* Em style.css */
+body {
+    background-color: #f0fdf4; /* Cor de fallback (verde bem claro) */
+    /* Gradiente suave do verde claro para o laranja claro */
+    background-image: linear-gradient(120deg, #71d34b 0%, #d18b34 100%);
+}

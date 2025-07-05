@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Loja de Construção</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            .receipt-print, .receipt-print * { visibility: visible; }
+            .receipt-print { position: absolute; left: 0; top: 0; width: 280px; font-family: 'Courier New', Courier, monospace; color: black; font-size: 12px; line-height: 1.4; }
+            .receipt-print .logo { max-width: 150px; margin: 0 auto 10px; display: block; } /* Centralizando a logo */
+            .receipt-print h1, .receipt-print h2 { text-align: center; margin: 0; font-weight: bold; }
+            .receipt-print h1 { font-size: 16px; margin-bottom: 10px; }
+            .receipt-print h2 { font-size: 14px; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0; margin: 10px 0; }
+            .receipt-print p, .receipt-print li { margin: 0; }
+            .receipt-print ul { list-style: none; padding: 0; }
+            .receipt-print .item-line { display: flex; justify-content: space-between; }
+            .receipt-print .total-section { margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; }
+            .receipt-print .total-line { display: flex; justify-content: space-between; font-weight: bold; }
+        }
+        .highlight { animation: highlight-fade 2s ease-in-out; }
+        @keyframes highlight-fade {
+            0% { background-color: #fefcbf; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Painel do Administrador</h1>
+            <p class="text-gray-600 mt-2">Gerencie sua loja, produtos e pedidos.</p>
+        </header>
+
+        <section id="dashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-receipt text-3xl text-blue-500"></i><div><p class="text-gray-500 text-sm">Pedidos Hoje</p><p id="pedidos-hoje" class="text-2xl font-bold">0</p></div></div>
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-dollar-sign text-3xl text-green-500"></i><div><p class="text-gray-500 text-sm">Faturamento Hoje</p><p id="faturamento-hoje" class="text-2xl font-bold">R$ 0,00</p></div></div>
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-star text-3xl text-yellow-500"></i><div><p class="text-gray-500 text-sm">Produto Mais Pedido</p><p id="produto-mais-pedido" class="text-xl font-bold truncate">--</p></div></div>
+        </section>
+
+        <section id="relatorios" class="mb-8 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Relatórios e Exportação</h2>
+            <div class="flex items-center gap-4">
+                <p class="text-gray-600 flex-grow">Faça o backup completo de todos os seus dados essenciais. Serão gerados dois arquivos: <strong class="font-mono">produtos.csv</strong> e <strong class="font-mono">pedidos.csv</strong>.</p>
+                <button id="export-all-data-btn" class="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700 transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i>
+                    Exportar Todos os Dados
+                </button>
+            </div>
+        </section>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section>
+                <div class="flex justify-between items-center mb-4 border-b pb-2"><h2 class="text-2xl font-semibold">Gerenciar Produtos</h2><a href="importar.html" class="text-sm bg-green-600 text-white font-semibold py-1 px-3 rounded-md hover:bg-green-700"><i class="fa-solid fa-upload"></i> Importar</a></div>
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Adicionar/Editar Produto</h3>
+                    <form id="form-add-produto" class="space-y-4">
+                        <input type="hidden" id="produto-id">
+                        <input type="text" id="nome-produto" required placeholder="Nome do Produto" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                        <div class="grid grid-cols-2 gap-4"><input type="number" step="0.01" id="preco-produto" required placeholder="Preço (R$)" class="mt-1 block w-full px-3 py-2 border rounded-md"><input type="text" id="unidade-medida" required placeholder="Unidade (un, pç, m²)" class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
+                        <select id="categoria-produto" required class="mt-1 block w-full px-3 py-2 border rounded-md"></select>
+                        <textarea id="descricao-produto" placeholder="Descrição detalhada do produto..." rows="3" class="mt-1 block w-full px-3 py-2 border rounded-md"></textarea>
+                        <div class="flex items-center gap-2"><input type="checkbox" id="destaque-produto" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"><label for="destaque-produto" class="text-sm font-medium text-gray-700">Marcar como Destaque</label></div>
+                        <div class="flex gap-4"><button type="submit" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 flex items-center justify-center gap-2"><i class="fa-solid fa-save"></i> Salvar</button><button type="button" id="cancel-edit-btn" class="flex-1 bg-gray-500 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-600 hidden">Cancelar</button></div>
+                    </form>
+                </div>
+                <input type="text" id="pesquisa-produto-admin" placeholder="Pesquisar produtos..." class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div id="produtos-admin-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2"></div>
+            </section>
+
+            <section>
+                <div class="flex justify-between items-center mb-4 border-b pb-2"><h2 class="text-2xl font-semibold">Pedidos Recebidos</h2><button id="export-csv-btn" class="text-sm bg-blue-600 text-white font-semibold py-1 px-3 rounded-md hover:bg-blue-700 flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div>
+                <input type="text" id="pesquisa-pedido-admin" placeholder="Pesquisar pedidos..." class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div id="pedidos-lista" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-novo-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto"><div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4"><i class="fa-solid fa-bell fa-shake text-3xl text-blue-600"></i></div><h2 class="text-2xl font-bold">Novo Pedido Recebido!</h2><div id="novo-pedido-info" class="text-gray-600 my-4 text-left"></div><div class="flex gap-4 mt-6"><button id="visualizar-pedido-btn" class="flex-1 bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700">Visualizar</button><button id="fechar-novo-pedido-modal-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Fechar</button></div></div>
+    </div>
+
+    <div id="modal-frete" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Adicionar Valor do Frete</h2>
+            <form id="form-frete">
+                <input type="hidden" id="frete-pedido-id">
+                <div>
+                    <label for="valor-frete" class="block text-sm font-medium text-gray-700">Valor (R$)</label>
+                    <input type="number" step="0.01" id="valor-frete" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500" placeholder="15.50">
+                </div>
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700">Salvar</button>
+                    <button type="button" id="cancelar-frete-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, serverTimestamp };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrinho - Agro Ferragem</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#F97316',
+                        'primary-hover': '#EA580C',
+                        'secondary': '#16A34A',
+                        'secondary-hover': '#15803D',
+                        'accent': '#DC2626',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+    <!-- Cabeçalho Fixo -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="container mx-auto p-4 flex justify-between items-center">
+            <a href="index.html">
+                <img src="logo.png" alt="Logo da Loja" class="h-20">
+            </a>
+            <a href="carrinho.html" class="relative">
+                <i class="fa-solid fa-shopping-cart text-3xl text-gray-500 hover:text-primary transition-colors"></i>
+                <span id="cart-counter" class="absolute -top-2 -right-3 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+            </a>
+        </div>
+    </header>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl font-bold mb-6 text-gray-900">Seu Carrinho de Compras</h1>
+        <div id="carrinho-container" class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div id="carrinho-itens-lista" class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg"></div>
+            <aside>
+                <div class="bg-white p-6 rounded-lg shadow-lg sticky top-28">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Resumo do Pedido</h2>
+                    <div class="mt-4 pt-4 border-t"><p class="flex justify-between font-bold text-lg"><span>Total:</span><span id="carrinho-total">R$ 0,00</span></p></div>
+                    <form id="form-pedido" class="mt-6">
+                        <h3 class="text-xl font-semibold mb-4">Finalizar Pedido</h3>
+                        <div class="space-y-4">
+                            <input type="text" id="nome" required placeholder="Seu Nome Completo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <input type="text" id="endereco" required placeholder="Seu Endereço" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <input type="tel" id="whatsapp" required placeholder="Seu WhatsApp (XX) 9XXXX-XXXX" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            <select id="forma-entrega" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"></select>
+                            <select id="forma-pagamento" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"></select>
+                        </div>
+                        <button type="submit" id="finalizar-pedido-btn" class="w-full bg-primary text-white font-bold py-3 px-4 rounded-md hover:bg-primary-hover mt-6 disabled:bg-gray-400 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-shopping-cart"></i> Finalizar Pedido
+                        </button>
+                    </form>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4"><i class="fa-solid fa-check h-6 w-6 text-secondary"></i></div>
+            <h2 class="text-2xl font-bold">Pedido Enviado!</h2>
+            <p class="text-gray-600 my-4">Guarde o ID do seu pedido para consultá-lo mais tarde:</p>
+            <div class="flex items-center gap-2 bg-gray-100 rounded-md p-2"><p id="pedido-id-display" class="text-gray-800 font-mono text-lg break-all flex-grow text-left"></p><button id="copiar-id-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold p-2 rounded-md"><i class="fa-solid fa-copy"></i></button></div>
+            <button id="fechar-modal-btn" class="mt-6 w-full bg-primary text-white font-bold py-2 px-6 rounded-md hover:bg-primary-hover">Fechar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp };
+    </script>
+    <script src="carrinho.js"></script>
+</body>
+</html>
