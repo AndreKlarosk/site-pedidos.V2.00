@@ -73,7 +73,32 @@
                     </form>
                 </div>
                 <input type="text" id="pesquisa-produto-admin" placeholder="Pesquisar produtos..." class="w-full px-4 py-2 border rounded-lg mb-4">
-                <div id="produtos-admin-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2"></div>
+                <div id="produtos-admin-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2 mb-8"></div>
+                
+                <div class="flex justify-between items-center mb-4 border-b pb-2 pt-4"><h2 class="text-2xl font-semibold">Gerenciar Cupons</h2></div>
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Criar Novo Cupom</h3>
+                    <form id="form-add-cupom" class="space-y-4">
+                        <input type="text" id="cupom-codigo" required placeholder="Código do Cupom (ex: PROMO10)" class="mt-1 block w-full px-3 py-2 border rounded-md uppercase">
+                        <div class="grid grid-cols-2 gap-4">
+                            <select id="cupom-tipo" required class="mt-1 block w-full px-3 py-2 border rounded-md">
+                                <option value="porcentagem">Porcentagem (%)</option>
+                                <option value="fixo">Valor Fixo (R$)</option>
+                            </select>
+                            <input type="number" step="0.01" id="cupom-valor" required placeholder="Valor" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                        </div>
+                         <div>
+                            <label for="cupom-validade" class="block text-sm font-medium text-gray-700">Data de Validade</label>
+                            <input type="date" id="cupom-validade" required class="mt-1 block w-full px-3 py-2 border rounded-md">
+                        </div>
+                        <button type="submit" class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-ticket"></i> Salvar Cupom
+                        </button>
+                    </form>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Cupons Cadastrados</h3>
+                <div id="cupons-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    </div>
             </section>
 
             <section>
