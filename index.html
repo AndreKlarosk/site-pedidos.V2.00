@@ -27,9 +27,8 @@
         }
     </script>
 </head>
-<body class="bg-gray-100 font-sans text-gray-800">
+<body class="bg-gray-100 font-sans text-gray-800 flex flex-col min-h-screen">
 
-    <!-- Cabeçalho Fixo -->
     <header class="bg-white shadow-md sticky top-0 z-40">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <a href="index.html">
@@ -42,7 +41,7 @@
         </div>
     </header>
 
-    <div class="container mx-auto p-4 md:p-8">
+    <div class="container mx-auto p-4 md:p-8 flex-grow">
         <section class="mb-12 bg-white p-6 rounded-lg shadow-lg">
             <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-900">Consulte seu Pedido</h2>
             <div class="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
@@ -71,7 +70,6 @@
         </main>
     </div>
 
-    <!-- MODAL DE DETALHES DO PRODUTO -->
     <div id="modal-produto" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-lg md:max-w-3xl max-h-[90vh] flex flex-col">
             <header class="p-4 border-b flex justify-between items-center">
@@ -95,12 +93,37 @@
                 <div class="mt-8">
                     <h3 class="text-xl font-semibold border-t pt-4">Produtos Relacionados</h3>
                     <div id="produtos-relacionados-lista" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                        <!-- Sugestões de produtos aqui -->
-                    </div>
+                        </div>
                 </div>
             </main>
         </div>
     </div>
+
+    <footer class="bg-gray-800 text-white mt-auto py-8">
+        <div class="container mx-auto px-4 text-center">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-gray-300">
+                <div class="flex items-center justify-center gap-3">
+                    <i class="fa-brands fa-instagram text-2xl"></i>
+                    <a href="https://www.instagram.com/agroferragemmalafaia" target="_blank" class="hover:text-primary">@agroferragemmalafaia</a>
+                </div>
+                <div class="flex items-center justify-center gap-3">
+                    <i class="fa-brands fa-facebook text-2xl"></i>
+                     <a href="https://www.facebook.com/agroferragemmalafaia" target="_blank" class="hover:text-primary">@agroferragemmalafaia</a>
+                </div>
+                <div class="flex items-center justify-center gap-3">
+                    <i class="fa-brands fa-whatsapp text-2xl"></i>
+                    <a href="https://wa.me/5553999304103" target="_blank" class="hover:text-primary">(53) 9 9930-4103</a>
+                </div>
+                <div class="flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-location-dot text-2xl"></i>
+                    <span>R. José Luiz Machado, 451 - Industrial I, Bagé</span>
+                </div>
+            </div>
+            <div class="mt-8 border-t border-gray-700 pt-6 text-sm text-gray-500">
+                <p>&copy; 2025 Agro Ferragem Malafaia. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
