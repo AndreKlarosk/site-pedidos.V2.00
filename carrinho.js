@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp } = window.firebase;
+    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc } = window.firebase;
     let db;
     try {
         const app = initializeApp(firebaseConfig);
@@ -41,9 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ESTADO ---
     let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    let cupomAplicado = null;
 
     // --- SELETORES ---
     const carrinhoItensListaEl = document.getElementById('carrinho-itens-lista');
+    const carrinhoSubtotalEl = document.getElementById('carrinho-subtotal');
+    const carrinhoDescontoEl = document.getElementById('carrinho-desconto');
+    const carrinhoDescontoContainer = document.getElementById('carrinho-desconto-container');
     const carrinhoTotalEl = document.getElementById('carrinho-total');
     const cartCounterEl = document.getElementById('cart-counter');
     const formPedido = document.getElementById('form-pedido');
@@ -54,6 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fecharModalBtn = document.getElementById('fechar-modal-btn');
     const pedidoIdDisplay = document.getElementById('pedido-id-display');
     const copiarIdBtn = document.getElementById('copiar-id-btn');
+    const cupomInput = document.getElementById('cupom-input');
+    const aplicarCupomBtn = document.getElementById('aplicar-cupom-btn');
+    const cupomFeedback = document.getElementById('cupom-feedback');
 
     // --- FUNÇÕES ---
     function updateCartCounter() {
@@ -78,29 +85,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function calcularErenderizarTotal() {
+        const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+        let desconto = 0;
+        
+        if (cupomAplicado) {
+            if (cupomAplicado.tipo === 'fixo') {
+                desconto = cupomAplicado.valor;
+            } else if (cupomAplicado.tipo === 'porcentagem') {
+                desconto = (subtotal * cupomAplicado.valor) / 100;
+            }
+        }
+        
+        if (desconto > subtotal) {
+            desconto = subtotal;
+        }
+
+        const total = subtotal - desconto;
+        
+        carrinhoSubtotalEl.textContent = `R$ ${subtotal.toFixed(2).replace('.', ',')}`;
+
+        if (desconto > 0) {
+            carrinhoDescontoEl.textContent = `- R$ ${desconto.toFixed(2).replace('.', ',')}`;
+            carrinhoDescontoContainer.classList.remove('hidden');
+        } else {
+            carrinhoDescontoContainer.classList.add('hidden');
+        }
+
+        carrinhoTotalEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
+
     function renderizarCarrinho() {
         updateCartCounter();
         if (carrinho.length === 0) {
             carrinhoItensListaEl.innerHTML = `<div class="text-center py-10"><i class="fa-solid fa-cart-shopping text-5xl text-gray-300 mb-4"></i><h3 class="text-xl font-semibold text-gray-700 mb-2">Seu carrinho está vazio</h3><p class="text-gray-500 mb-6">Adicione produtos para vê-los aqui.</p><a href="index.html" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-md hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"><i class="fa-solid fa-store"></i>Voltar para a Loja</a></div>`;
             finalizarPedidoBtn.disabled = true;
-            return;
+            cupomAplicado = null;
+            cupomInput.value = '';
+            cupomFeedback.textContent = '';
+            aplicarCupomBtn.disabled = false;
+        } else {
+            finalizarPedidoBtn.disabled = false;
+            carrinhoItensListaEl.innerHTML = '';
+            carrinho.forEach((item, index) => {
+                const icone = categorias[item.categoria]?.icone || 'fa-solid fa-box';
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex items-center justify-between py-4 border-b';
+                itemEl.innerHTML = `<div class="flex items-center gap-4"><i class="${icone} text-3xl text-indigo-500 w-8 text-center"></i><div><p class="font-semibold">${item.nome}</p><p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p></div></div><div class="flex items-center gap-3"><input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md"><button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></div>`;
+                carrinhoItensListaEl.appendChild(itemEl);
+            });
         }
-        
-        finalizarPedidoBtn.disabled = false;
-        carrinhoItensListaEl.innerHTML = '';
-        carrinho.forEach((item, index) => {
-            const icone = categorias[item.categoria]?.icone || 'fa-solid fa-box';
-            const itemEl = document.createElement('div');
-            itemEl.className = 'flex items-center justify-between py-4 border-b';
-            itemEl.innerHTML = `<div class="flex items-center gap-4"><i class="${icone} text-3xl text-indigo-500 w-8 text-center"></i><div><p class="font-semibold">${item.nome}</p><p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p></div></div><div class="flex items-center gap-3"><input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md"><button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></div>`;
-            carrinhoItensListaEl.appendChild(itemEl);
-        });
-        atualizarTotal();
-    }
-
-    function atualizarTotal() {
-        const total = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
-        carrinhoTotalEl.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        calcularErenderizarTotal();
     }
 
     function atualizarQuantidade(index, quantidade) {
@@ -110,7 +145,58 @@ document.addEventListener('DOMContentLoaded', () => {
             carrinho.splice(index, 1);
         }
         localStorage.setItem('carrinho', JSON.stringify(carrinho));
+        
+        if (cupomAplicado) {
+            cupomInput.value = '';
+            cupomAplicado = null;
+            cupomFeedback.textContent = 'Carrinho atualizado. Aplique o cupom novamente.';
+            cupomFeedback.className = 'text-sm mt-1 h-4 text-yellow-600';
+        }
+        
         renderizarCarrinho();
+    }
+
+    async function aplicarCupom() {
+        const codigo = cupomInput.value.trim().toUpperCase();
+        if (!codigo) return;
+        
+        cupomFeedback.textContent = 'Validando...';
+        cupomFeedback.className = 'text-sm mt-1 h-4 text-gray-500';
+        aplicarCupomBtn.disabled = true;
+
+        try {
+            const cupomRef = doc(db, "cupons", codigo);
+            const docSnap = await getDoc(cupomRef);
+
+            if (docSnap.exists()) {
+                const cupom = docSnap.data();
+                const hoje = new Date();
+                const validade = cupom.validade.toDate();
+
+                if (validade >= hoje) {
+                    cupomAplicado = { id: docSnap.id, ...cupom };
+                    cupomFeedback.textContent = 'Cupom aplicado!';
+                    cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
+                    cupomInput.disabled = true;
+                } else {
+                    cupomAplicado = null;
+                    cupomFeedback.textContent = 'Este cupom expirou.';
+                    cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+                }
+            } else {
+                cupomAplicado = null;
+                cupomFeedback.textContent = 'Cupom inválido.';
+                cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+            }
+        } catch (error) {
+            console.error("Erro ao aplicar cupom:", error);
+            cupomAplicado = null;
+            cupomFeedback.textContent = 'Erro ao validar.';
+            cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+        } finally {
+            aplicarCupomBtn.disabled = false;
+            calcularErenderizarTotal();
+        }
     }
 
     async function finalizarPedido(e) {
@@ -126,20 +212,48 @@ document.addEventListener('DOMContentLoaded', () => {
         finalizarPedidoBtn.disabled = true;
         finalizarPedidoBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Enviando...';
         
+        const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+        let desconto = 0;
+        if (cupomAplicado) {
+            if (cupomAplicado.tipo === 'fixo') {
+                desconto = cupomAplicado.valor;
+            } else {
+                desconto = (subtotal * cupomAplicado.valor) / 100;
+            }
+        }
+        if (desconto > subtotal) desconto = subtotal;
+        desconto = parseFloat(desconto.toFixed(2));
+        const total = subtotal - desconto;
+        
         try {
             const pedido = {
                 cliente: nome, endereco, whatsapp, pagamento, entrega,
                 itens: carrinho.map(item => ({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade })),
-                total: carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0),
+                subtotal: subtotal,
+                desconto: desconto,
+                total: total,
                 valorFrete: 0,
                 status: 'Recebido', data: serverTimestamp()
             };
+
+            if (cupomAplicado && desconto > 0) {
+                pedido.cupom = {
+                    codigo: cupomAplicado.id,
+                    tipo: cupomAplicado.tipo,
+                    valor: cupomAplicado.valor
+                };
+            }
+
             const docRef = await addDoc(collection(db, "pedidos"), pedido);
             
             pedidoIdDisplay.textContent = docRef.id;
             modalConfirmacao.classList.remove('hidden');
             
             carrinho = [];
+            cupomAplicado = null;
+            cupomInput.value = '';
+            cupomInput.disabled = false;
+            cupomFeedback.textContent = '';
             localStorage.removeItem('carrinho');
             formPedido.reset();
             renderizarCarrinho();
@@ -188,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     formPedido.addEventListener('submit', finalizarPedido);
     fecharModalBtn.addEventListener('click', () => modalConfirmacao.classList.add('hidden'));
     copiarIdBtn.addEventListener('click', copiarIdPedido);
+    aplicarCupomBtn.addEventListener('click', aplicarCupom);
 
     // --- INICIALIZAÇÃO ---
     popularSeletores();
