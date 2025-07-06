@@ -27,7 +27,6 @@
     </script>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
-    <!-- Cabeçalho Fixo -->
     <header class="bg-white shadow-md sticky top-0 z-40">
         <div class="container mx-auto p-4 flex justify-between items-center">
             <a href="index.html">
@@ -47,7 +46,28 @@
             <aside>
                 <div class="bg-white p-6 rounded-lg shadow-lg sticky top-28">
                     <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Resumo do Pedido</h2>
-                    <div class="mt-4 pt-4 border-t"><p class="flex justify-between font-bold text-lg"><span>Total:</span><span id="carrinho-total">R$ 0,00</span></p></div>
+                    
+                    <div class="mt-4">
+                        <label for="cupom-input" class="block text-sm font-medium text-gray-700">Cupom de Desconto</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="text" id="cupom-input" placeholder="INSIRA SEU CUPOM" class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md focus:ring-primary focus:border-primary sm:text-sm border-gray-300 uppercase">
+                            <button id="aplicar-cupom-btn" class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm hover:bg-gray-100">
+                                Aplicar
+                            </button>
+                        </div>
+                        <div id="cupom-feedback" class="text-sm mt-1 h-4"></div>
+                    </div>
+
+                    <div id="resumo-valores" class="mt-4 pt-4 border-t space-y-1">
+                        <p class="flex justify-between"><span>Subtotal:</span><span id="carrinho-subtotal">R$ 0,00</span></p>
+                        <p id="carrinho-desconto-container" class="flex justify-between text-red-600 hidden">
+                            <span>Desconto:</span><span id="carrinho-desconto">R$ 0,00</span>
+                        </p>
+                        <p class="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+                            <span>Total:</span><span id="carrinho-total">R$ 0,00</span>
+                        </p>
+                    </div>
+
                     <form id="form-pedido" class="mt-6">
                         <h3 class="text-xl font-semibold mb-4">Finalizar Pedido</h3>
                         <div class="space-y-4">
@@ -66,7 +86,6 @@
         </div>
     </div>
 
-    <!-- Modal de Confirmação -->
     <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto">
             <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4"><i class="fa-solid fa-check h-6 w-6 text-secondary"></i></div>
@@ -79,8 +98,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp };
+        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc };
     </script>
     <script src="carrinho.js"></script>
 </body>
