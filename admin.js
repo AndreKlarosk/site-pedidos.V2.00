@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ESTADO ---
     let todosProdutos = [];
     let todosPedidos = [];
+    let todosCupons = [];
     let isFirstLoad = true;
     const synth = new Tone.Synth().toDestination();
 
@@ -66,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelarFreteBtn = document.getElementById('cancelar-frete-btn');
     const valorFreteInput = document.getElementById('valor-frete');
     const fretePedidoIdInput = document.getElementById('frete-pedido-id');
+    const formAddCupom = document.getElementById('form-add-cupom');
+    const cuponsListaEl = document.getElementById('cupons-lista');
+
 
     // --- FUNÇÕES ---
 
@@ -91,7 +95,16 @@ document.addEventListener('DOMContentLoaded', () => {
             pedidoCard.id = `pedido-${id}`;
             pedidoCard.className = 'bg-white p-4 rounded-lg shadow-md transition-all duration-300';
             const statusAtual = statusPedido[pedido.status] || statusPedido['Recebido'];
+
+            // Se o subtotal não existir (pedidos antigos), calcula na hora.
+            const subtotal = pedido.subtotal !== undefined ? pedido.subtotal : pedido.itens.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             const totalGeral = pedido.total + (pedido.valorFrete || 0);
+
+            let detalhesValoresHtml = `<p>Subtotal: R$ ${subtotal.toFixed(2).replace('.',',')}</p>`;
+            if (pedido.desconto > 0) {
+                detalhesValoresHtml += `<p class="text-red-500">Desconto: -R$ ${pedido.desconto.toFixed(2).replace('.',',')}</p>`;
+            }
+            detalhesValoresHtml += `<p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>`;
 
             pedidoCard.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -103,9 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p><strong>Pagamento:</strong> ${pedido.pagamento}</p>
                 </div>
                 <div class="my-2"><p class="font-semibold text-sm">Itens:</p><ul class="list-disc list-inside text-sm pl-2">${pedido.itens.map(item => `<li>${item.quantidade}x ${item.nome}</li>`).join('')}</ul></div>
-                <div class="text-right text-sm">
-                    <p>Subtotal: R$ ${pedido.total.toFixed(2).replace('.',',')}</p>
-                    <p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>
+                <div class="text-right text-sm border-t pt-2">
+                    ${detalhesValoresHtml}
                 </div>
                 <p class="text-right font-bold text-lg mt-1">Total: R$ ${totalGeral.toFixed(2).replace('.',',')}</p>
                 <div class="border-t mt-3 pt-3 flex items-center justify-end gap-2 flex-wrap">
@@ -130,6 +142,37 @@ document.addEventListener('DOMContentLoaded', () => {
             produtosAdminListaEl.appendChild(item);
         });
     };
+    
+    function renderizarCupons(cupons) {
+        cuponsListaEl.innerHTML = cupons.length === 0 ? '<p class="text-gray-500">Nenhum cupom cadastrado.</p>' : '';
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Comparar apenas a data
+
+        cupons.forEach(({ id, data: c }) => {
+            const item = document.createElement('div');
+            const validade = c.validade.toDate();
+            const expirado = validade < hoje;
+
+            const valorFormatado = c.tipo === 'porcentagem'
+                ? `${c.valor}%`
+                : `R$ ${c.valor.toFixed(2).replace('.', ',')}`;
+
+            item.className = `bg-white p-3 rounded-md shadow-sm flex justify-between items-center ${expirado ? 'opacity-50' : ''}`;
+            item.innerHTML = `
+                <div>
+                    <p class="font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-ticket text-orange-500"></i> ${id}
+                        ${expirado ? '<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">Expirado</span>' : ''}
+                    </p>
+                    <p class="text-sm text-gray-600">Desconto de ${valorFormatado} &bull; Válido até ${validade.toLocaleDateString('pt-BR')}</p>
+                </div>
+                <button data-id="${id}" class="delete-cupom-btn p-2 hover:bg-gray-200 rounded-full">
+                    <i class="fa-solid fa-trash-can pointer-events-none"></i>
+                </button>
+            `;
+            cuponsListaEl.appendChild(item);
+        });
+    }
 
     const filtrarErenderizar = () => {
         const termoProduto = pesquisaProdutoAdminInput.value.toLowerCase();
@@ -165,6 +208,11 @@ document.addEventListener('DOMContentLoaded', () => {
             todosProdutos = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
             filtrarErenderizar();
         });
+        onSnapshot(query(collection(db, "cupons")), (snapshot) => {
+            todosCupons = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
+                .sort((a, b) => b.data.validade.toMillis() - a.data.validade.toMillis());
+            renderizarCupons(todosCupons);
+        });
     }
 
     async function salvarProduto(e) {
@@ -183,6 +231,39 @@ document.addEventListener('DOMContentLoaded', () => {
             await setDoc(doc(db, "produtos", id || doc(collection(db, "produtos")).id), produto);
             resetarFormulario();
         } catch (error) { console.error("Erro ao salvar produto: ", error); }
+    }
+    
+    async function salvarCupom(e) {
+        e.preventDefault();
+        const codigo = document.getElementById('cupom-codigo').value.trim().toUpperCase();
+        const validadeInput = document.getElementById('cupom-validade').value;
+
+        if (!codigo || !validadeInput) {
+            alert("Preencha todos os campos do cupom.");
+            return;
+        }
+        
+        const [year, month, day] = validadeInput.split('-');
+        const validade = new Date(year, month - 1, day, 23, 59, 59);
+
+        const cupom = {
+            tipo: document.getElementById('cupom-tipo').value,
+            valor: parseFloat(document.getElementById('cupom-valor').value),
+            validade: validade
+        };
+
+        if (isNaN(cupom.valor) || cupom.valor <= 0) {
+            alert("O valor do desconto deve ser um número positivo.");
+            return;
+        }
+
+        try {
+            await setDoc(doc(db, "cupons", codigo), cupom);
+            formAddCupom.reset();
+        } catch (error) {
+            console.error("Erro ao salvar cupom: ", error);
+            alert("Erro ao salvar o cupom.");
+        }
     }
 
     function editarProduto(id) {
@@ -213,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deletarProduto(id) { if (confirm("Excluir este produto?")) { await deleteDoc(doc(db, "produtos", id)); } }
+    async function deletarCupom(id) { if (confirm(`Excluir o cupom "${id}"?`)) { await deleteDoc(doc(db, "cupons", id)); } }
     async function deletarPedido(id) { if (confirm("EXCLUIR este pedido? Esta ação não pode ser desfeita.")) { await deleteDoc(doc(db, "pedidos", id)); } }
     async function mudarStatusPedido(pedidoId, novoStatus) { await updateDoc(doc(db, "pedidos", pedidoId), { status: novoStatus }); }
     
@@ -237,9 +319,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function imprimirPedido(pedidoId) {
         const { data: pedido } = todosPedidos.find(p => p.id === pedidoId);
         const dataPedido = pedido.data ? pedido.data.toDate().toLocaleString('pt-BR') : 'Data indisponível';
+        
+        const subtotal = pedido.subtotal !== undefined ? pedido.subtotal : pedido.itens.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
         const totalGeral = pedido.total + (pedido.valorFrete || 0);
+
         const itensHtml = pedido.itens.map(item => `<li class="item-line"><span>${item.quantidade}x ${item.nome}</span><span>R$ ${(item.preco * item.quantidade).toFixed(2)}</span></li>`).join('');
-        const conteudo = `<div class="receipt-print"><img src="logo.png" alt="Logo" class="logo"><h1>Comprovante de Pedido</h1><p>ID: ${pedidoId}</p><p>Data: ${dataPedido}</p><h2>Cliente</h2><p>${pedido.cliente}</p><p>${pedido.endereco}</p><p>WhatsApp: ${pedido.whatsapp}</p><h2>Itens</h2><ul>${itensHtml}</ul><div class="total-section"><p class="item-line"><span>Subtotal</span><span>R$ ${pedido.total.toFixed(2)}</span></p><p class="item-line"><span>Frete</span><span>R$ ${(pedido.valorFrete || 0).toFixed(2)}</span></p><p class="total-line"><span>TOTAL</span><span>R$ ${totalGeral.toFixed(2)}</span></p></div><p style="text-align: center; margin-top: 10px;">Entrega: ${pedido.entrega}</p><p style="text-align: center;">Pagamento: ${pedido.pagamento}</p></div>`;
+        
+        let cupomHtml = '';
+        if (pedido.cupom && pedido.cupom.codigo && pedido.desconto > 0) {
+            cupomHtml = `<p class="item-line"><span>Desconto (${pedido.cupom.codigo})</span><span>-R$ ${pedido.desconto.toFixed(2)}</span></p>`;
+        }
+        
+        const conteudo = `<div class="receipt-print"><img src="logo.png" alt="Logo" class="logo"><h1>Comprovante de Pedido</h1><p>ID: ${pedidoId}</p><p>Data: ${dataPedido}</p><h2>Cliente</h2><p>${pedido.cliente}</p><p>${pedido.endereco}</p><p>WhatsApp: ${pedido.whatsapp}</p><h2>Itens</h2><ul>${itensHtml}</ul><div class="total-section"><p class="item-line"><span>Subtotal</span><span>R$ ${subtotal.toFixed(2)}</span></p>${cupomHtml}<p class="item-line"><span>Frete</span><span>R$ ${(pedido.valorFrete || 0).toFixed(2)}</span></p><p class="total-line"><span>TOTAL</span><span>R$ ${totalGeral.toFixed(2)}</span></p></div><p style="text-align: center; margin-top: 10px;">Entrega: ${pedido.entrega}</p><p style="text-align: center;">Pagamento: ${pedido.pagamento}</p></div>`;
         const pwin = window.open('', '_blank');
         pwin.document.write(`<html><head><title>Imprimir</title><style>${document.querySelector('style').innerHTML}</style></head><body>${conteudo}</body></html>`);
         pwin.document.close();
@@ -248,12 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function exportarParaCSV() {
         let csvContent = "data:text/csv;charset=utf-8,";
-        const headers = ["ID Pedido", "Data", "Cliente", "WhatsApp", "Endereço", "Itens", "Subtotal", "Frete", "Total", "Forma de Pagamento", "Forma de Entrega", "Status"];
+        const headers = ["ID Pedido", "Data", "Cliente", "WhatsApp", "Endereço", "Itens", "Subtotal", "Desconto", "Frete", "Total", "Forma de Pagamento", "Forma de Entrega", "Status", "Cupom"];
         csvContent += headers.join(";") + "\r\n";
         todosPedidos.forEach(({id, data: p}) => {
             const itensString = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(", ");
             const totalGeral = p.total + (p.valorFrete || 0);
-            const row = [id, p.data.toDate().toLocaleString('pt-BR'), p.cliente, p.whatsapp, `"${p.endereco}"`, `"${itensString}"`, p.total.toFixed(2), (p.valorFrete || 0).toFixed(2), totalGeral.toFixed(2), p.pagamento, p.entrega, p.status];
+            const row = [id, p.data.toDate().toLocaleString('pt-BR'), p.cliente, p.whatsapp, `"${p.endereco}"`, `"${itensString}"`, (p.subtotal || p.total).toFixed(2), (p.desconto || 0).toFixed(2), (p.valorFrete || 0).toFixed(2), totalGeral.toFixed(2), p.pagamento, p.entrega, p.status, (p.cupom?.codigo || '')];
             csvContent += row.join(";") + "\r\n";
         });
         const encodedUri = encodeURI(csvContent);
@@ -266,17 +357,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function exportarTodosOsDados() {
-        // 1. Exportar Produtos
         if (todosProdutos.length > 0) {
             let csvContentProdutos = "data:text/csv;charset=utf-8,";
             const headersProdutos = ["ID", "Nome", "Preco", "UnidadeMedida", "Categoria", "Descricao", "Destaque"];
             csvContentProdutos += headersProdutos.join(";") + "\r\n";
-
             todosProdutos.forEach(({ id, data: p }) => {
                 const row = [id, `"${p.nome}"`, p.preco, p.unidadeMedida, p.categoria, `"${p.descricao || ''}"`, p.destaque || false];
                 csvContentProdutos += row.join(";") + "\r\n";
             });
-
             const encodedUriProdutos = encodeURI(csvContentProdutos);
             const linkProdutos = document.createElement("a");
             linkProdutos.setAttribute("href", encodedUriProdutos);
@@ -287,27 +375,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             alert("Nenhum produto para exportar.");
         }
-
-        // 2. Exportar Pedidos (reutilizando a lógica existente)
         if (todosPedidos.length > 0) {
-            let csvContentPedidos = "data:text/csv;charset=utf-8,";
-            const headersPedidos = ["ID Pedido", "Data", "Cliente", "WhatsApp", "Endereco", "Itens", "Subtotal", "Frete", "Total", "Forma de Pagamento", "Forma de Entrega", "Status"];
-            csvContentPedidos += headersPedidos.join(";") + "\r\n";
-
-            todosPedidos.forEach(({ id, data: p }) => {
-                const itensString = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(", ");
-                const totalGeral = p.total + (p.valorFrete || 0);
-                const row = [id, p.data.toDate().toLocaleString('pt-BR'), `"${p.cliente}"`, p.whatsapp, `"${p.endereco}"`, `"${itensString}"`, p.total.toFixed(2), (p.valorFrete || 0).toFixed(2), totalGeral.toFixed(2), p.pagamento, p.entrega, p.status];
-                csvContentPedidos += row.join(";") + "\r\n";
-            });
-
-            const encodedUriPedidos = encodeURI(csvContentPedidos);
-            const linkPedidos = document.createElement("a");
-            linkPedidos.setAttribute("href", encodedUriPedidos);
-            linkPedidos.setAttribute("download", "pedidos.csv");
-            document.body.appendChild(linkPedidos);
-            linkPedidos.click(); // O navegador fará o download deste segundo arquivo
-            document.body.removeChild(linkPedidos);
+            exportarParaCSV();
         } else {
             alert("Nenhum pedido para exportar.");
         }
@@ -338,7 +407,14 @@ document.addEventListener('DOMContentLoaded', () => {
     visualizarPedidoBtn.addEventListener('click', (e) => { const id = e.target.dataset.id; const el = document.getElementById(`pedido-${id}`); if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(() => el.classList.remove('highlight'), 2000); } modalNovoPedido.classList.add('hidden'); });
     formFrete.addEventListener('submit', salvarFrete);
     cancelarFreteBtn.addEventListener('click', () => modalFrete.classList.add('hidden'));
-    
+    formAddCupom.addEventListener('submit', salvarCupom);
+    cuponsListaEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.delete-cupom-btn');
+        if (btn) {
+            deletarCupom(btn.dataset.id);
+        }
+    });
+
     const exportAllDataBtn = document.getElementById('export-all-data-btn');
     if (exportAllDataBtn) {
         exportAllDataBtn.addEventListener('click', exportarTodosOsDados);
@@ -349,6 +425,5 @@ document.addEventListener('DOMContentLoaded', () => {
     carregarDados();
     document.body.addEventListener('click', async () => {
         await Tone.start();
-        console.log('Contexto de áudio iniciado pelo usuário.');
-    }, { once: true }); // A opção { once: true } garante que isso só aconteça uma vez.
+    }, { once: true });
 });
