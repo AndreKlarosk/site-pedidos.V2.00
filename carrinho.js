@@ -52,6 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const cupomFeedback = document.getElementById('cupom-feedback');
 
     // --- FUNÇÕES ---
+
+    // Função para resetar o estado e a UI do cupom
+    const resetarCupomState = (mensagem = '', cor = 'text-gray-500') => {
+        cupomAplicado = null;
+        cupomInput.value = '';
+        cupomInput.disabled = false;
+        aplicarCupomBtn.disabled = false;
+        cupomFeedback.textContent = mensagem;
+        cupomFeedback.className = `text-sm mt-1 h-4 ${cor}`;
+    };
+
     function updateCartCounter() {
         const totalItems = carrinho.reduce((sum, item) => sum + item.quantidade, 0);
         if (totalItems > 0) {
@@ -90,10 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     .reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             }
             
-            // --- LÓGICA DE CÁLCULO CORRIGIDA ---
             if (subtotalElegivel > 0) {
                 if (cupomAplicado.tipo === 'fixo') {
-                    // O desconto é o menor valor entre o cupom e o subtotal dos itens elegíveis
                     desconto = Math.min(cupomAplicado.valor, subtotalElegivel);
                 } else if (cupomAplicado.tipo === 'porcentagem') {
                     desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
@@ -123,11 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (carrinho.length === 0) {
             carrinhoItensListaEl.innerHTML = `<div class="text-center py-10"><i class="fa-solid fa-cart-shopping text-5xl text-gray-300 mb-4"></i><h3 class="text-xl font-semibold text-gray-700 mb-2">Seu carrinho está vazio</h3><p class="text-gray-500 mb-6">Adicione produtos para vê-los aqui.</p><a href="index.html" class="bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-primary-hover transition-colors inline-flex items-center gap-2"><i class="fa-solid fa-store"></i>Voltar para a Loja</a></div>`;
             finalizarPedidoBtn.disabled = true;
-            cupomAplicado = null;
-            cupomInput.value = '';
-            cupomInput.disabled = false;
-            cupomFeedback.textContent = '';
-            aplicarCupomBtn.disabled = false;
+            resetarCupomState();
         } else {
             finalizarPedidoBtn.disabled = false;
             carrinhoItensListaEl.innerHTML = '';
@@ -151,12 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('carrinho', JSON.stringify(carrinho));
         
         if (cupomAplicado) {
-            cupomInput.value = '';
-            cupomInput.disabled = false;
-            aplicarCupomBtn.disabled = false;
-            cupomAplicado = null;
-            cupomFeedback.textContent = 'Carrinho atualizado. Aplique o cupom novamente.';
-            cupomFeedback.className = 'text-sm mt-1 h-4 text-yellow-600';
+            resetarCupomState('Carrinho atualizado. Aplique o cupom novamente.', 'text-yellow-600');
         }
         
         renderizarCarrinho();
@@ -189,28 +189,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         cupomFeedback.textContent = 'Cupom aplicado!';
                         cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
                         cupomInput.disabled = true;
+                        aplicarCupomBtn.disabled = true;
                     } else {
-                        cupomAplicado = null;
-                        cupomFeedback.textContent = 'Cupom não aplicável a estes itens.';
-                        cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+                        resetarCupomState('Cupom não aplicável a estes itens.', 'text-red-600');
                     }
                 } else {
-                    cupomAplicado = null;
-                    cupomFeedback.textContent = 'Este cupom expirou.';
-                    cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+                    resetarCupomState('Este cupom expirou.', 'text-red-600');
                 }
             } else {
-                cupomAplicado = null;
-                cupomFeedback.textContent = 'Cupom inválido.';
-                cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+                resetarCupomState('Cupom inválido.', 'text-red-600');
             }
         } catch (error) {
             console.error("Erro ao aplicar cupom:", error);
-            cupomAplicado = null;
-            cupomFeedback.textContent = 'Erro ao validar.';
-            cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+            resetarCupomState('Erro ao validar o cupom.', 'text-red-600');
         } finally {
-            aplicarCupomBtn.disabled = cupomAplicado ? true : false;
+            // Apenas re-calcula o total. Não re-renderiza a lista de itens.
             calcularErenderizarTotal();
         }
     }
@@ -240,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 subtotalElegivel = carrinho.filter(item => categoriasAplicaveis.includes(item.categoria)).reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             }
             
-            // --- LÓGICA DE CÁLCULO CORRIGIDA (DUPLICADA PARA ENVIO) ---
             if (subtotalElegivel > 0) {
                 if (cupomAplicado.tipo === 'fixo') {
                     desconto = Math.min(cupomAplicado.valor, subtotalElegivel);
@@ -279,10 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
             modalConfirmacao.classList.remove('hidden');
             
             carrinho = [];
-            cupomAplicado = null;
-            cupomInput.value = '';
-            cupomInput.disabled = false;
-            cupomFeedback.textContent = '';
             localStorage.removeItem('carrinho');
             formPedido.reset();
             renderizarCarrinho();
@@ -323,12 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.docs.forEach(doc => {
                 categorias[doc.id] = doc.data();
             });
-            // Após carregar as categorias, renderiza o carrinho que depende delas
             renderizarCarrinho();
         });
         popularSeletores();
     }
-
 
     // --- EVENT LISTENERS ---
     carrinhoItensListaEl.addEventListener('change', (e) => {
