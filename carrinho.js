@@ -89,11 +89,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     .filter(item => categoriasAplicaveis.includes(item.categoria))
                     .reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             }
-
-            if (cupomAplicado.tipo === 'fixo') {
-                desconto = cupomAplicado.valor;
-            } else if (cupomAplicado.tipo === 'porcentagem') {
-                desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
+            
+            // --- LÓGICA DE CÁLCULO CORRIGIDA ---
+            if (subtotalElegivel > 0) {
+                if (cupomAplicado.tipo === 'fixo') {
+                    // O desconto é o menor valor entre o cupom e o subtotal dos itens elegíveis
+                    desconto = Math.min(cupomAplicado.valor, subtotalElegivel);
+                } else if (cupomAplicado.tipo === 'porcentagem') {
+                    desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
+                }
             }
         }
         
@@ -226,20 +230,26 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
         let desconto = 0;
+
         if (cupomAplicado) {
-             const categoriasAplicaveis = cupomAplicado.categoriasAplicaveis || ['todos'];
+            const categoriasAplicaveis = cupomAplicado.categoriasAplicaveis || ['todos'];
             let subtotalElegivel = 0;
             if (categoriasAplicaveis.includes('todos')) {
                 subtotalElegivel = subtotal;
             } else {
                 subtotalElegivel = carrinho.filter(item => categoriasAplicaveis.includes(item.categoria)).reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             }
-            if (cupomAplicado.tipo === 'fixo') {
-                desconto = cupomAplicado.valor;
-            } else {
-                desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
+            
+            // --- LÓGICA DE CÁLCULO CORRIGIDA (DUPLICADA PARA ENVIO) ---
+            if (subtotalElegivel > 0) {
+                if (cupomAplicado.tipo === 'fixo') {
+                    desconto = Math.min(cupomAplicado.valor, subtotalElegivel);
+                } else if (cupomAplicado.tipo === 'porcentagem') {
+                    desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
+                }
             }
         }
+
         if (desconto > subtotal) desconto = subtotal;
         desconto = parseFloat(desconto.toFixed(2));
         const total = subtotal - desconto;
