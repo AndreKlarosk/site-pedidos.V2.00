@@ -21,8 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Adicionado 'query' e 'onSnapshot' à lista de funções importadas do Firebase.
     const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } = window.firebase;
     let db;
     try {
@@ -55,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES ---
 
-    // Função para resetar o estado e a UI do cupom
     const resetarCupomState = (mensagem = '', cor = 'text-gray-500') => {
         cupomAplicado = null;
         cupomInput.value = '';
@@ -164,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderizarCarrinho();
     }
 
+    // --- FUNÇÃO APLICAR CUPOM REESTRUTURADA ---
     async function aplicarCupom() {
         const codigo = cupomInput.value.trim().toUpperCase();
         if (!codigo) return;
@@ -176,35 +174,52 @@ document.addEventListener('DOMContentLoaded', () => {
             const cupomRef = doc(db, "cupons", codigo);
             const docSnap = await getDoc(cupomRef);
 
-            if (docSnap.exists()) {
-                const cupom = docSnap.data();
-                const hoje = new Date();
-                const validade = cupom.validade.toDate();
-
-                if (validade >= hoje) {
-                    const categoriasAplicaveis = cupom.categoriasAplicaveis || ['todos'];
-                    const temItemElegivel = categoriasAplicaveis.includes('todos') || 
-                                           carrinho.some(item => categoriasAplicaveis.includes(item.categoria));
-                    
-                    if (temItemElegivel) {
-                        cupomAplicado = { id: docSnap.id, ...cupom };
-                        cupomFeedback.textContent = 'Cupom aplicado!';
-                        cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
-                        cupomInput.disabled = true;
-                        aplicarCupomBtn.disabled = true;
-                    } else {
-                        resetarCupomState('Cupom não aplicável a estes itens.', 'text-red-600');
-                    }
-                } else {
-                    resetarCupomState('Este cupom expirou.', 'text-red-600');
-                }
-            } else {
+            // 1. O cupom existe?
+            if (!docSnap.exists()) {
                 resetarCupomState('Cupom inválido.', 'text-red-600');
+                return;
             }
+
+            const cupom = docSnap.data();
+            const hoje = new Date();
+            const validade = cupom.validade.toDate();
+            
+            // 2. O cupom expirou?
+            if (validade < hoje) {
+                resetarCupomState('Este cupom expirou.', 'text-red-600');
+                return;
+            }
+            
+            const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+
+            // 3. O carrinho atingiu o valor mínimo?
+            if (cupom.valorMinimo > 0 && subtotal < cupom.valorMinimo) {
+                resetarCupomState(`Pedido mínimo de R$ ${cupom.valorMinimo.toFixed(2).replace('.',',')} para este cupom.`, 'text-red-600');
+                return;
+            }
+
+            const categoriasAplicaveis = cupom.categoriasAplicaveis || ['todos'];
+            const temItemElegivel = categoriasAplicaveis.includes('todos') || 
+                                   carrinho.some(item => categoriasAplicaveis.includes(item.categoria));
+            
+            // 4. O cupom é aplicável aos itens do carrinho?
+            if (!temItemElegivel) {
+                resetarCupomState('Cupom não aplicável a estes itens.', 'text-red-600');
+                return;
+            }
+            
+            // SUCESSO! Todas as condições foram atendidas.
+            cupomAplicado = { id: docSnap.id, ...cupom };
+            cupomFeedback.textContent = 'Cupom aplicado!';
+            cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
+            cupomInput.disabled = true;
+            aplicarCupomBtn.disabled = true;
+
         } catch (error) {
             console.error("Erro ao aplicar cupom:", error);
             resetarCupomState('Erro ao validar o cupom.', 'text-red-600');
         } finally {
+            // Apenas re-calcula o total, pois o estado já foi definido.
             calcularErenderizarTotal();
         }
     }
@@ -226,6 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let desconto = 0;
 
         if (cupomAplicado) {
+            if (cupomAplicado.valorMinimo > 0 && subtotal < cupomAplicado.valorMinimo) {
+                alert(`O valor mínimo para usar o cupom ${cupomAplicado.id} é de R$ ${cupomAplicado.valorMinimo.toFixed(2).replace('.',',')}. Seu pedido não atinge esse valor.`);
+                finalizarPedidoBtn.disabled = false;
+                finalizarPedidoBtn.innerHTML = '<i class="fa-solid fa-shopping-cart"></i> Finalizar Pedido';
+                return;
+            }
+
             const categoriasAplicaveis = cupomAplicado.categoriasAplicaveis || ['todos'];
             let subtotalElegivel = 0;
             if (categoriasAplicaveis.includes('todos')) {
