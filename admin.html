@@ -9,13 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
         @media print {
             body * { visibility: hidden; }
             .receipt-print, .receipt-print * { visibility: visible; }
             .receipt-print { position: absolute; left: 0; top: 0; width: 280px; font-family: 'Courier New', Courier, monospace; color: black; font-size: 12px; line-height: 1.4; }
-            .receipt-print .logo { max-width: 150px; margin: 0 auto 10px; display: block; } /* Centralizando a logo */
+            .receipt-print .logo { max-width: 150px; margin: 0 auto 10px; display: block; }
             .receipt-print h1, .receipt-print h2 { text-align: center; margin: 0; font-weight: bold; }
             .receipt-print h1 { font-size: 16px; margin-bottom: 10px; }
             .receipt-print h2 { font-size: 14px; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0; margin: 10px 0; }
@@ -30,6 +30,7 @@
             0% { background-color: #fefcbf; }
             100% { background-color: transparent; }
         }
+        #cupom-categorias { height: 100px; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -72,12 +73,29 @@
                         <div class="flex gap-4"><button type="submit" class="flex-1 bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 flex items-center justify-center gap-2"><i class="fa-solid fa-save"></i> Salvar</button><button type="button" id="cancel-edit-btn" class="flex-1 bg-gray-500 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-600 hidden">Cancelar</button></div>
                     </form>
                 </div>
-                <input type="text" id="pesquisa-produto-admin" placeholder="Pesquisar produtos..." class="w-full px-4 py-2 border rounded-lg mb-4">
+                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Ajuste de Preços em Massa</h3>
+                    <form id="form-ajuste-preco" class="space-y-4">
+                         <select id="ajuste-categoria" required class="mt-1 block w-full px-3 py-2 border rounded-md"></select>
+                        <div class="grid grid-cols-3 gap-4">
+                            <select id="ajuste-tipo" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                                <option value="aumentar">Aumentar</option>
+                                <option value="reduzir">Reduzir</option>
+                            </select>
+                            <input type="number" step="0.01" id="ajuste-percentual" required placeholder="Valor (%)" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Aplicar</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <select id="filtro-produto-categoria" class="w-full sm:w-1/2 px-4 py-2 border rounded-lg"></select>
+                    <input type="text" id="pesquisa-produto-admin" placeholder="Pesquisar produtos..." class="w-full sm:w-1/2 px-4 py-2 border rounded-lg">
+                </div>
                 <div id="produtos-admin-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2 mb-8"></div>
                 
                 <div class="flex justify-between items-center mb-4 border-b pb-2 pt-4"><h2 class="text-2xl font-semibold">Gerenciar Cupons</h2></div>
                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Criar Novo Cupom</h3>
+                    <h3 id="form-cupom-titulo" class="text-xl font-semibold mb-4">Criar Novo Cupom</h3>
                     <form id="form-add-cupom" class="space-y-4">
                         <input type="text" id="cupom-codigo" required placeholder="Código do Cupom (ex: PROMO10)" class="mt-1 block w-full px-3 py-2 border rounded-md uppercase">
                         <div class="grid grid-cols-2 gap-4">
@@ -91,20 +109,48 @@
                             <label for="cupom-validade" class="block text-sm font-medium text-gray-700">Data de Validade</label>
                             <input type="date" id="cupom-validade" required class="mt-1 block w-full px-3 py-2 border rounded-md">
                         </div>
-                        <button type="submit" class="w-full bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-ticket"></i> Salvar Cupom
-                        </button>
+                        <div>
+                            <label for="cupom-categorias" class="block text-sm font-medium text-gray-700">Aplicar a Categorias (segure Ctrl/Cmd para selecionar várias)</label>
+                            <select id="cupom-categorias" multiple class="mt-1 block w-full px-3 py-2 border rounded-md"></select>
+                        </div>
+                        <div class="flex gap-4">
+                            <button type="submit" class="flex-1 bg-orange-500 text-white font-bold py-3 px-4 rounded-md hover:bg-orange-600 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-ticket"></i> Salvar Cupom
+                            </button>
+                             <button type="button" id="cancel-cupom-edit-btn" class="flex-1 bg-gray-500 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-600 hidden">Cancelar Edição</button>
+                        </div>
                     </form>
                 </div>
                 <h3 class="text-xl font-semibold mb-2">Cupons Cadastrados</h3>
-                <div id="cupons-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                    </div>
+                <div id="cupons-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2"></div>
             </section>
 
             <section>
                 <div class="flex justify-between items-center mb-4 border-b pb-2"><h2 class="text-2xl font-semibold">Pedidos Recebidos</h2><button id="export-csv-btn" class="text-sm bg-blue-600 text-white font-semibold py-1 px-3 rounded-md hover:bg-blue-700 flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> Exportar CSV</button></div>
-                <input type="text" id="pesquisa-pedido-admin" placeholder="Pesquisar pedidos..." class="w-full px-4 py-2 border rounded-lg mb-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="filtro-data-inicio" class="text-sm font-medium">De:</label>
+                        <input type="date" id="filtro-data-inicio" class="w-full px-2 py-1 border rounded-lg">
+                    </div>
+                    <div>
+                        <label for="filtro-data-fim" class="text-sm font-medium">Até:</label>
+                        <input type="date" id="filtro-data-fim" class="w-full px-2 py-1 border rounded-lg">
+                    </div>
+                </div>
+                <input type="text" id="pesquisa-pedido-admin" placeholder="Pesquisar por cliente ou ID..." class="w-full px-4 py-2 border rounded-lg mb-4">
                 <div id="pedidos-lista" class="space-y-4 max-h-[600px] overflow-y-auto pr-2"></div>
+                
+                <div class="flex justify-between items-center mb-4 border-b pb-2 pt-8"><h2 class="text-2xl font-semibold">Gerenciar Categorias</h2></div>
+                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Adicionar Nova Categoria</h3>
+                    <form id="form-add-categoria" class="space-y-4">
+                        <input type="text" id="categoria-nome" required placeholder="Nome da Categoria" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                        <select id="categoria-icone-select" required class="mt-1 block w-full px-3 py-2 border rounded-md"></select>
+                        <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-md hover:bg-teal-700">Salvar Categoria</button>
+                    </form>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">Categorias Cadastradas</h3>
+                <div id="categorias-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2"></div>
             </section>
         </main>
     </div>
@@ -112,7 +158,6 @@
     <div id="modal-novo-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto"><div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4"><i class="fa-solid fa-bell fa-shake text-3xl text-blue-600"></i></div><h2 class="text-2xl font-bold">Novo Pedido Recebido!</h2><div id="novo-pedido-info" class="text-gray-600 my-4 text-left"></div><div class="flex gap-4 mt-6"><button id="visualizar-pedido-btn" class="flex-1 bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700">Visualizar</button><button id="fechar-novo-pedido-modal-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Fechar</button></div></div>
     </div>
-
     <div id="modal-frete" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm mx-auto">
             <h2 class="text-2xl font-bold mb-4">Adicionar Valor do Frete</h2>
@@ -132,8 +177,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, serverTimestamp };
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs };
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="admin.js"></script>
