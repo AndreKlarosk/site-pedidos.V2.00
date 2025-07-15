@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Loja de Construção</title>
+
+    <script>
+        if (sessionStorage.getItem('isAdminAuthenticated') !== 'true') {
+            window.location.href = 'login.html';
+        }
+    </script>
+    
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +44,12 @@
 
     <div class="container mx-auto p-4 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Painel do Administrador</h1>
+            <div class="flex justify-center items-center gap-4 relative">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Painel do Administrador</h1>
+                <button id="logout-btn" title="Sair" class="absolute right-0 bg-red-500 text-white font-bold py-2 px-3 rounded-md hover:bg-red-600">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
             <p class="text-gray-600 mt-2">Gerencie sua loja, produtos e pedidos.</p>
         </header>
 
