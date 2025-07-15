@@ -171,6 +171,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(catId => catId === 'todos' ? 'Todas' : (todasCategorias[catId]?.nome || catId))
                 .join(', ');
 
+            let infoExtra = `Válido até ${validade.toLocaleDateString('pt-BR')}`;
+            if (c.valorMinimo > 0) {
+                infoExtra += ` &bull; Mín. R$ ${c.valorMinimo.toFixed(2).replace('.', ',')}`;
+            }
+
             item.className = `bg-white p-3 rounded-md shadow-sm ${expirado ? 'opacity-50' : ''}`;
             item.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -179,7 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="fa-solid fa-ticket text-orange-500"></i> ${id}
                             ${expirado ? '<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">Expirado</span>' : ''}
                         </p>
-                        <p class="text-sm text-gray-600">Desconto de ${valorFormatado} &bull; Válido até ${validade.toLocaleDateString('pt-BR')}</p>
+                        <p class="text-sm text-gray-600">Desconto de ${valorFormatado}</p>
+                        <p class="text-sm text-gray-600">${infoExtra}</p>
                         <p class="text-xs text-gray-500 mt-1">Categorias: ${categoriasAplicaveis}</p>
                     </div>
                     <div class="flex gap-2">
@@ -317,19 +323,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const codigoInput = document.getElementById('cupom-codigo');
         const codigo = codigoInput.value.trim().toUpperCase();
         const validadeInput = document.getElementById('cupom-validade').value;
+        const valorMinimoInput = document.getElementById('cupom-valor-minimo').value;
         const categoriasSelect = document.getElementById('cupom-categorias');
         const categoriasSelecionadas = [...categoriasSelect.selectedOptions].map(option => option.value);
 
-        if (!codigo || !validadeInput) { alert("Preencha todos os campos do cupom."); return; }
+        if (!codigo || !validadeInput) { alert("Preencha o código e a validade do cupom."); return; }
         if (categoriasSelecionadas.length === 0) { alert("Selecione ao menos uma categoria ou 'Todos'."); return; }
         
         const [year, month, day] = validadeInput.split('-');
         const validade = new Date(year, month - 1, day, 23, 59, 59);
+        const valorMinimo = parseFloat(valorMinimoInput) || 0;
 
         const cupom = {
             tipo: document.getElementById('cupom-tipo').value,
             valor: parseFloat(document.getElementById('cupom-valor').value),
             validade: validade,
+            valorMinimo: valorMinimo,
             categoriasAplicaveis: categoriasSelecionadas
         };
 
@@ -388,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cupom-codigo').readOnly = true;
         document.getElementById('cupom-tipo').value = cupom.tipo;
         document.getElementById('cupom-valor').value = cupom.valor;
+        document.getElementById('cupom-valor-minimo').value = cupom.valorMinimo || '';
         
         const validade = cupom.validade.toDate();
         const yyyy = validade.getFullYear();
