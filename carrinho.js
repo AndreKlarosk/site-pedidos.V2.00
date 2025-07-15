@@ -10,18 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'tele': 'Tele-entrega (Moto)',
         'frete': 'Frete (Carro)'
     };
-    const categorias = {
-        'ferramentas': { nome: 'Ferramentas', icone: 'fa-solid fa-screwdriver-wrench' },
-        'cimento-argamassa': { nome: 'Cimento e Argamassa', icone: 'fa-solid fa-trowel-bricks' },
-        'tijolos-blocos': { nome: 'Tijolos e Blocos', icone: 'fa-solid fa-layer-group' },
-        'pisos-revestimentos': { nome: 'Pisos e Revestimentos', icone: 'fa-solid fa-grip' },
-        'eletrica': { nome: 'Elétrica', icone: 'fa-solid fa-bolt' },
-        'hidraulica': { nome: 'Hidráulica', icone: 'fa-solid fa-faucet-drip' },
-        'pintura': { nome: 'Pintura', icone: 'fa-solid fa-paint-roller' },
-        'madeiras': { nome: 'Madeiras', icone: 'fa-solid fa-tree' },
-        'fixadores': { nome: 'Fixadores', icone: 'fa-solid fa-screwdriver' },
-        'outros': { nome: 'Outros', icone: 'fa-solid fa-box' }
-    };
+    let categorias = {}; // Será preenchido pelo Firebase
 
     // --- INICIALIZAÇÃO DO FIREBASE ---
     const firebaseConfig = {
@@ -32,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc } = window.firebase;
+    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } = window.firebase;
     let db;
     try {
         const app = initializeApp(firebaseConfig);
@@ -90,16 +79,26 @@ document.addEventListener('DOMContentLoaded', () => {
         let desconto = 0;
         
         if (cupomAplicado) {
+            const categoriasAplicaveis = cupomAplicado.categoriasAplicaveis || ['todos'];
+            let subtotalElegivel = 0;
+
+            if (categoriasAplicaveis.includes('todos')) {
+                subtotalElegivel = subtotal;
+            } else {
+                subtotalElegivel = carrinho
+                    .filter(item => categoriasAplicaveis.includes(item.categoria))
+                    .reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+            }
+
             if (cupomAplicado.tipo === 'fixo') {
                 desconto = cupomAplicado.valor;
             } else if (cupomAplicado.tipo === 'porcentagem') {
-                desconto = (subtotal * cupomAplicado.valor) / 100;
+                desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
             }
         }
         
-        if (desconto > subtotal) {
-            desconto = subtotal;
-        }
+        if (desconto > subtotal) desconto = subtotal;
+        if (desconto < 0) desconto = 0;
 
         const total = subtotal - desconto;
         
@@ -118,10 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderizarCarrinho() {
         updateCartCounter();
         if (carrinho.length === 0) {
-            carrinhoItensListaEl.innerHTML = `<div class="text-center py-10"><i class="fa-solid fa-cart-shopping text-5xl text-gray-300 mb-4"></i><h3 class="text-xl font-semibold text-gray-700 mb-2">Seu carrinho está vazio</h3><p class="text-gray-500 mb-6">Adicione produtos para vê-los aqui.</p><a href="index.html" class="bg-indigo-600 text-white font-bold py-3 px-6 rounded-md hover:bg-indigo-700 transition-colors inline-flex items-center gap-2"><i class="fa-solid fa-store"></i>Voltar para a Loja</a></div>`;
+            carrinhoItensListaEl.innerHTML = `<div class="text-center py-10"><i class="fa-solid fa-cart-shopping text-5xl text-gray-300 mb-4"></i><h3 class="text-xl font-semibold text-gray-700 mb-2">Seu carrinho está vazio</h3><p class="text-gray-500 mb-6">Adicione produtos para vê-los aqui.</p><a href="index.html" class="bg-primary text-white font-bold py-3 px-6 rounded-md hover:bg-primary-hover transition-colors inline-flex items-center gap-2"><i class="fa-solid fa-store"></i>Voltar para a Loja</a></div>`;
             finalizarPedidoBtn.disabled = true;
             cupomAplicado = null;
             cupomInput.value = '';
+            cupomInput.disabled = false;
             cupomFeedback.textContent = '';
             aplicarCupomBtn.disabled = false;
         } else {
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const icone = categorias[item.categoria]?.icone || 'fa-solid fa-box';
                 const itemEl = document.createElement('div');
                 itemEl.className = 'flex items-center justify-between py-4 border-b';
-                itemEl.innerHTML = `<div class="flex items-center gap-4"><i class="${icone} text-3xl text-indigo-500 w-8 text-center"></i><div><p class="font-semibold">${item.nome}</p><p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p></div></div><div class="flex items-center gap-3"><input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md"><button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></div>`;
+                itemEl.innerHTML = `<div class="flex items-center gap-4"><i class="${icone} text-3xl text-primary w-8 text-center"></i><div><p class="font-semibold">${item.nome}</p><p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p></div></div><div class="flex items-center gap-3"><input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md"><button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></div>`;
                 carrinhoItensListaEl.appendChild(itemEl);
             });
         }
@@ -148,6 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (cupomAplicado) {
             cupomInput.value = '';
+            cupomInput.disabled = false;
+            aplicarCupomBtn.disabled = false;
             cupomAplicado = null;
             cupomFeedback.textContent = 'Carrinho atualizado. Aplique o cupom novamente.';
             cupomFeedback.className = 'text-sm mt-1 h-4 text-yellow-600';
@@ -174,10 +176,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const validade = cupom.validade.toDate();
 
                 if (validade >= hoje) {
-                    cupomAplicado = { id: docSnap.id, ...cupom };
-                    cupomFeedback.textContent = 'Cupom aplicado!';
-                    cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
-                    cupomInput.disabled = true;
+                    const categoriasAplicaveis = cupom.categoriasAplicaveis || ['todos'];
+                    const temItemElegivel = categoriasAplicaveis.includes('todos') || 
+                                           carrinho.some(item => categoriasAplicaveis.includes(item.categoria));
+                    
+                    if (temItemElegivel) {
+                        cupomAplicado = { id: docSnap.id, ...cupom };
+                        cupomFeedback.textContent = 'Cupom aplicado!';
+                        cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
+                        cupomInput.disabled = true;
+                    } else {
+                        cupomAplicado = null;
+                        cupomFeedback.textContent = 'Cupom não aplicável a estes itens.';
+                        cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
+                    }
                 } else {
                     cupomAplicado = null;
                     cupomFeedback.textContent = 'Este cupom expirou.';
@@ -194,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cupomFeedback.textContent = 'Erro ao validar.';
             cupomFeedback.className = 'text-sm mt-1 h-4 text-red-600';
         } finally {
-            aplicarCupomBtn.disabled = false;
+            aplicarCupomBtn.disabled = cupomAplicado ? true : false;
             calcularErenderizarTotal();
         }
     }
@@ -215,10 +227,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
         let desconto = 0;
         if (cupomAplicado) {
+             const categoriasAplicaveis = cupomAplicado.categoriasAplicaveis || ['todos'];
+            let subtotalElegivel = 0;
+            if (categoriasAplicaveis.includes('todos')) {
+                subtotalElegivel = subtotal;
+            } else {
+                subtotalElegivel = carrinho.filter(item => categoriasAplicaveis.includes(item.categoria)).reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
+            }
             if (cupomAplicado.tipo === 'fixo') {
                 desconto = cupomAplicado.valor;
             } else {
-                desconto = (subtotal * cupomAplicado.valor) / 100;
+                desconto = (subtotalElegivel * cupomAplicado.valor) / 100;
             }
         }
         if (desconto > subtotal) desconto = subtotal;
@@ -228,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const pedido = {
                 cliente: nome, endereco, whatsapp, pagamento, entrega,
-                itens: carrinho.map(item => ({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade })),
+                itens: carrinho.map(item => ({ id: item.id, nome: item.nome, preco: item.preco, quantidade: item.quantidade, categoria: item.categoria })),
                 subtotal: subtotal,
                 desconto: desconto,
                 total: total,
@@ -288,6 +307,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function iniciarApp() {
+         onSnapshot(query(collection(db, "categorias")), (snapshot) => {
+            categorias = {};
+            snapshot.docs.forEach(doc => {
+                categorias[doc.id] = doc.data();
+            });
+            // Após carregar as categorias, renderiza o carrinho que depende delas
+            renderizarCarrinho();
+        });
+        popularSeletores();
+    }
+
+
     // --- EVENT LISTENERS ---
     carrinhoItensListaEl.addEventListener('change', (e) => {
         if (e.target.classList.contains('qtd-input')) {
@@ -305,6 +337,5 @@ document.addEventListener('DOMContentLoaded', () => {
     aplicarCupomBtn.addEventListener('click', aplicarCupom);
 
     // --- INICIALIZAÇÃO ---
-    popularSeletores();
-    renderizarCarrinho();
+    iniciarApp();
 });
