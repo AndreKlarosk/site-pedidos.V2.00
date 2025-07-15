@@ -171,6 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 .map(catId => catId === 'todos' ? 'Todas' : (todasCategorias[catId]?.nome || catId))
                 .join(', ');
 
+            // --- CORREÇÃO APLICADA AQUI ---
+            // Adiciona a informação do valor mínimo na exibição do cupom.
             let infoExtra = `Válido até ${validade.toLocaleDateString('pt-BR')}`;
             if (c.valorMinimo > 0) {
                 infoExtra += ` &bull; Mín. R$ ${c.valorMinimo.toFixed(2).replace('.', ',')}`;
@@ -259,9 +261,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 todasCategorias[doc.id] = doc.data();
             });
             renderizarCategorias();
-            popularCategoriasSelects(); // Popula todos os <select> de categoria
-            filtrarErenderizar(); // Re-renderiza produtos com nomes de categoria corretos
-            renderizarCupons(todosCupons); // Re-renderiza cupons com nomes de categoria corretos
+            popularCategoriasSelects(); 
+            filtrarErenderizar(); 
+            renderizarCupons(todosCupons);
         });
         
         // Listener de Pedidos
@@ -323,7 +325,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const codigoInput = document.getElementById('cupom-codigo');
         const codigo = codigoInput.value.trim().toUpperCase();
         const validadeInput = document.getElementById('cupom-validade').value;
+        
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Adiciona a leitura e conversão do valor mínimo.
         const valorMinimoInput = document.getElementById('cupom-valor-minimo').value;
+        const valorMinimo = parseFloat(valorMinimoInput) || 0;
+
         const categoriasSelect = document.getElementById('cupom-categorias');
         const categoriasSelecionadas = [...categoriasSelect.selectedOptions].map(option => option.value);
 
@@ -332,13 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const [year, month, day] = validadeInput.split('-');
         const validade = new Date(year, month - 1, day, 23, 59, 59);
-        const valorMinimo = parseFloat(valorMinimoInput) || 0;
 
         const cupom = {
             tipo: document.getElementById('cupom-tipo').value,
             valor: parseFloat(document.getElementById('cupom-valor').value),
             validade: validade,
-            valorMinimo: valorMinimo,
+            valorMinimo: valorMinimo, // Adiciona o valor mínimo ao objeto do cupom
             categoriasAplicaveis: categoriasSelecionadas
         };
 
@@ -397,6 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cupom-codigo').readOnly = true;
         document.getElementById('cupom-tipo').value = cupom.tipo;
         document.getElementById('cupom-valor').value = cupom.valor;
+        
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Preenche o campo de valor mínimo ao editar um cupom.
         document.getElementById('cupom-valor-minimo').value = cupom.valorMinimo || '';
         
         const validade = cupom.validade.toDate();
