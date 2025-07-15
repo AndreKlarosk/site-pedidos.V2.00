@@ -124,8 +124,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc };
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Adicionadas as funções 'query' e 'onSnapshot' que estavam faltando.
+        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot };
     </script>
     <script src="carrinho.js"></script>
 </body>
