@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Adicionado 'query' e 'onSnapshot' à lista de funções importadas do Firebase.
     const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } = window.firebase;
     let db;
     try {
@@ -203,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Erro ao aplicar cupom:", error);
             resetarCupomState('Erro ao validar o cupom.', 'text-red-600');
         } finally {
-            // Apenas re-calcula o total. Não re-renderiza a lista de itens.
             calcularErenderizarTotal();
         }
     }
