@@ -1,19 +1,8 @@
-// script.js (CORRIGIDO)
+// script.js
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURAÇÕES GLOBAIS ---
-    const categorias = {
-        'ferramentas': { nome: 'Ferramentas', icone: 'fa-solid fa-screwdriver-wrench' },
-        'cimento-argamassa': { nome: 'Cimento e Argamassa', icone: 'fa-solid fa-trowel-bricks' },
-        'tijolos-blocos': { nome: 'Tijolos e Blocos', icone: 'fa-solid fa-layer-group' },
-        'pisos-revestimentos': { nome: 'Pisos e Revestimentos', icone: 'fa-solid fa-grip' },
-        'eletrica': { nome: 'Elétrica', icone: 'fa-solid fa-bolt' },
-        'hidraulica': { nome: 'Hidráulica', icone: 'fa-solid fa-faucet-drip' },
-        'pintura': { nome: 'Pintura', icone: 'fa-solid fa-paint-roller' },
-        'madeiras': { nome: 'Madeiras', icone: 'fa-solid fa-tree' },
-        'fixadores': { nome: 'Fixadores', icone: 'fa-solid fa-screwdriver' },
-        'outros': { nome: 'Outros', icone: 'fa-solid fa-box' }
-    };
+    let categorias = {}; // Será preenchido pelo Firebase
      const statusPedido = {
         'Recebido': { texto: 'Recebido', cor: 'text-blue-600' },
         'Em Preparacao': { texto: 'Em Preparação', cor: 'text-yellow-600' },
@@ -86,12 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
             produtoCard.dataset.id = id;
             produtoCard.className = `produto-card cursor-pointer bg-white rounded-lg shadow-md overflow-hidden flex flex-col items-center text-center p-4 transform hover:scale-105 transition-transform duration-300 ${produto.destaque ? 'border-2 border-yellow-400' : ''}`;
             const icone = categorias[produto.categoria]?.icone || 'fa-solid fa-box';
+            const nomeCategoria = categorias[produto.categoria]?.nome || 'Sem Categoria';
+
             produtoCard.innerHTML = `
                 ${produto.destaque ? '<div class="absolute top-0 right-0 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">DESTAQUE</div>' : ''}
-                <div class="text-5xl text-indigo-500 my-4 pointer-events-none"><i class="${icone}"></i></div>
+                <div class="text-5xl text-primary my-4 pointer-events-none"><i class="${icone}"></i></div>
                 <h3 class="text-lg font-semibold h-12 pointer-events-none">${produto.nome}</h3>
-                <p class="text-gray-500 text-sm mb-2 pointer-events-none">${categorias[produto.categoria]?.nome || 'Sem Categoria'}</p>
-                <p class="text-gray-800 font-bold text-2xl my-2 pointer-events-none">R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}</p>
+                <p class="text-gray-500 text-sm mb-2 pointer-events-none">${nomeCategoria}</p>
+                <p class="text-primary-hover font-bold text-2xl my-2 pointer-events-none">R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}</p>
             `;
             containerEl.appendChild(produtoCard);
         });
@@ -138,10 +129,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!produtoData) return;
         const { id, data: produto } = produtoData;
         
+        const icone = categorias[produto.categoria]?.icone || 'fa-solid fa-box';
+        const nomeCategoria = categorias[produto.categoria]?.nome || 'Sem Categoria';
+
         document.getElementById('modal-produto-nome').textContent = produto.nome;
-        document.getElementById('modal-produto-icone').className = `text-9xl text-indigo-500 ${categorias[produto.categoria]?.icone || 'fa-solid fa-box'}`;
+        document.getElementById('modal-produto-icone').className = `text-9xl text-primary ${icone}`;
         document.getElementById('modal-produto-preco').textContent = `R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}`;
-        document.getElementById('modal-produto-categoria').textContent = categorias[produto.categoria]?.nome || 'Sem Categoria';
+        document.getElementById('modal-produto-categoria').textContent = nomeCategoria;
         document.getElementById('modal-produto-descricao').textContent = produto.descricao || 'Este produto não possui uma descrição detalhada.';
         modalAddCarrinhoBtn.dataset.id = id;
 
@@ -172,8 +166,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function iniciarApp() {
+        // 1. Carrega as categorias
+        onSnapshot(query(collection(db, "categorias")), (snapshot) => {
+            categorias = {};
+            snapshot.docs.forEach(doc => {
+                categorias[doc.id] = doc.data();
+            });
+
+            // 2. Popula os filtros com as categorias carregadas
+            popularFiltros();
+            
+            // 3. Carrega os produtos
+            carregarProdutos();
+        });
+
+        // 4. Atualiza o contador do carrinho
+        updateCartCounter();
+    }
+
+
     // --- EVENT LISTENERS ---
     produtosListaEl.addEventListener('click', (e) => {
+        const card = e.target.closest('.produto-card');
+        if (card) {
+            abrirModalProduto(card.dataset.id);
+        }
+    });
+    document.getElementById('produtos-relacionados-lista').addEventListener('click', (e) => {
         const card = e.target.closest('.produto-card');
         if (card) {
             abrirModalProduto(card.dataset.id);
@@ -189,18 +209,17 @@ document.addEventListener('DOMContentLoaded', () => {
     pesquisaProdutoInput.addEventListener('input', filtrarErenderizar);
     filtroCategoriaEl.addEventListener('change', filtrarErenderizar);
     consultarPedidoBtn.addEventListener('click', consultarPedido);
+    consultaIdInput.addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') consultarPedido();
+    });
 
-    // --- ATALHO PARA O PAINEL ADMIN (LUGAR CORRETO) ---
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'b') {
             e.preventDefault();
-            console.log('Atalho Alt+B acionado. Redirecionando...');
             window.location.href = 'admin.html';
         }
     });
 
     // --- INICIALIZAÇÃO ---
-    popularFiltros();
-    carregarProdutos();
-    updateCartCounter();
+    iniciarApp();
 });
