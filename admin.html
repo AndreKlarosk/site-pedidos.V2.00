@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Loja de Construção</title>
-
     <script>
         if (sessionStorage.getItem('isAdminAuthenticated') !== 'true') {
             window.location.href = 'login.html';
         }
     </script>
-    
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -78,6 +76,7 @@
                     <form id="form-add-produto" class="space-y-4">
                         <input type="hidden" id="produto-id">
                         <input type="text" id="nome-produto" required placeholder="Nome do Produto" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                        <input type="url" id="imagem-url-produto" placeholder="URL da Imagem do Produto" class="mt-1 block w-full px-3 py-2 border rounded-md">
                         <div class="grid grid-cols-2 gap-4"><input type="number" step="0.01" id="preco-produto" required placeholder="Preço (R$)" class="mt-1 block w-full px-3 py-2 border rounded-md"><input type="text" id="unidade-medida" required placeholder="Unidade (un, pç, m²)" class="mt-1 block w-full px-3 py-2 border rounded-md"></div>
                         <select id="categoria-produto" required class="mt-1 block w-full px-3 py-2 border rounded-md"></select>
                         <textarea id="descricao-produto" placeholder="Descrição detalhada do produto..." rows="3" class="mt-1 block w-full px-3 py-2 border rounded-md"></textarea>
