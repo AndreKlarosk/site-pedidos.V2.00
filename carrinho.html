@@ -74,6 +74,15 @@
                             <input type="text" id="nome" required placeholder="Seu Nome Completo" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
                             <input type="text" id="endereco" required placeholder="Seu Endereço" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
                             <input type="tel" id="whatsapp" required placeholder="Seu WhatsApp (XX) 9XXXX-XXXX" class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                            
+                            <div class="border-t pt-4">
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" id="cpf-nota-checkbox" class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                    <label for="cpf-nota-checkbox" class="text-sm font-medium text-gray-700">Deseja CPF na nota?</label>
+                                </div>
+                                <input type="text" id="cpf-nota-input" placeholder="Digite seu CPF" class="mt-2 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary hidden">
+                            </div>
+                            
                             <select id="forma-entrega" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"></select>
                             <select id="forma-pagamento" required class="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:ring-primary focus:border-primary"></select>
                         </div>
@@ -124,8 +133,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        // --- CORREÇÃO APLICADA AQUI ---
-        // Adicionadas as funções 'query' e 'onSnapshot' que estavam faltando.
         import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         window.firebase = { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot };
     </script>
