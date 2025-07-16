@@ -187,9 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function carregarProdutos() {
-        const q = query(collection(db, "produtos"), where("ativo", "==", true));
-        onSnapshot(q, (snapshot) => {
-            todosProdutos = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+        // CORREÇÃO APLICADA AQUI:
+        // 1. Busca todos os produtos do banco de dados.
+        onSnapshot(query(collection(db, "produtos")), (snapshot) => {
+            let produtosDoBanco = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+            
+            // 2. Filtra em JavaScript para mostrar apenas produtos onde 'ativo' não é explicitamente 'false'.
+            // Isso inclui produtos novos (ativo: true) e antigos (ativo: undefined).
+            todosProdutos = produtosDoBanco.filter(p => p.data.ativo !== false);
+            
+            // 3. Continua com a renderização normal
             filtrarErenderizar();
         });
     }
