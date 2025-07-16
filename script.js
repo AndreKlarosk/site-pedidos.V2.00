@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- CONFIGURAÇÕES GLOBAIS ---
     let categorias = {}; 
-    const statusPedido = {
+     const statusPedido = {
         'Recebido': { texto: 'Recebido', cor: 'text-blue-600' },
         'Em Preparacao': { texto: 'Em Preparação', cor: 'text-yellow-600' },
         'Pronto': { texto: 'Pronto para Retirada/Entrega', cor: 'text-green-600' },
@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    const { initializeApp, getFirestore, collection, onSnapshot, query, doc, getDoc } = window.firebase;
+    const { initializeApp, getFirestore, collection, onSnapshot, query, doc, getDoc, where, updateDoc, setDoc, increment } = window.firebase;
     let db;
     try {
         const app = initializeApp(firebaseConfig);
@@ -108,18 +108,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const endIndex = startIndex + ITENS_POR_PAGINA;
         const produtosDaPagina = produtosFiltrados.slice(startIndex, endIndex);
         renderizarProdutos(produtosDaPagina, produtosListaEl);
-        // Rola a tela para o topo da lista de produtos
         document.getElementById('produtos-lista').scrollIntoView({ behavior: 'smooth' });
     };
 
-    // --- FUNÇÃO DE PAGINAÇÃO REESTRUTURADA ---
     const renderizarPaginacao = () => {
         const totalPaginas = Math.ceil(produtosFiltrados.length / ITENS_POR_PAGINA);
         paginationContainer.innerHTML = '';
 
         if (totalPaginas <= 1) return;
 
-        // Função auxiliar para criar botões
         const criarBotao = (texto, pagina, desabilitado = false) => {
             const button = document.createElement('button');
             button.innerHTML = texto;
@@ -138,13 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return button;
         };
 
-        // Botão "Anterior"
         paginationContainer.appendChild(criarBotao('<i class="fa-solid fa-chevron-left"></i>', paginaAtual - 1, paginaAtual === 1));
 
-        // Lógica para os números das páginas
         const numerosPagina = new Set();
-        numerosPagina.add(1); // Sempre mostra a primeira página
-        numerosPagina.add(totalPaginas); // Sempre mostra a última página
+        numerosPagina.add(1);
+        numerosPagina.add(totalPaginas);
         numerosPagina.add(paginaAtual);
         if (paginaAtual > 1) numerosPagina.add(paginaAtual - 1);
         if (paginaAtual < totalPaginas) numerosPagina.add(paginaAtual + 1);
@@ -167,7 +162,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Botão "Próxima"
         paginationContainer.appendChild(criarBotao('<i class="fa-solid fa-chevron-right"></i>', paginaAtual + 1, paginaAtual === totalPaginas));
     };
 
@@ -186,14 +180,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tempProdutos.sort((a, b) => (b.data.destaque ? 1 : 0) - (a.data.destaque ? 1 : 0));
         
         produtosFiltrados = tempProdutos;
-        paginaAtual = 1; // Sempre volta para a primeira página ao filtrar
+        paginaAtual = 1;
         
         renderizarPaginaAtual();
         renderizarPaginacao();
     };
 
     function carregarProdutos() {
-        onSnapshot(query(collection(db, "produtos")), (snapshot) => {
+        const q = query(collection(db, "produtos"), where("ativo", "==", true));
+        onSnapshot(q, (snapshot) => {
             todosProdutos = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
             filtrarErenderizar();
         });
@@ -269,6 +264,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function trackSiteVisit() {
+        if (!sessionStorage.getItem('siteVisited')) {
+            sessionStorage.setItem('siteVisited', 'true');
+            const analyticsRef = doc(db, "analytics", "siteMetrics");
+            try {
+                await updateDoc(analyticsRef, {
+                    visitasSite: increment(1)
+                });
+            } catch (error) {
+                if (error.code === 'not-found') {
+                    await setDoc(analyticsRef, { visitasSite: 1, visitasCarrinho: 0 }, { merge: true });
+                }
+            }
+        }
+    }
+
     function iniciarApp() {
         onSnapshot(query(collection(db, "categorias")), (snapshot) => {
             categorias = {};
@@ -279,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
             carregarProdutos();
         });
         updateCartCounter();
+        trackSiteVisit();
     }
 
 
