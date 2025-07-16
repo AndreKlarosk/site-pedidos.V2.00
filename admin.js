@@ -81,7 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const cancelCupomEditBtn = document.getElementById('cancel-cupom-edit-btn');
     const formCupomTitulo = document.getElementById('form-cupom-titulo');
     const filtroProdutoCategoriaSelect = document.getElementById('filtro-produto-categoria');
-
+    const modalEditPedido = document.getElementById('modal-edit-pedido');
+    const formEditPedido = document.getElementById('form-edit-pedido');
+    const cancelEditPedidoBtn = document.getElementById('cancel-edit-pedido-btn');
 
     // --- FUNÇÕES ---
 
@@ -115,30 +117,62 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusAtual = statusPedido[pedido.status] || statusPedido['Recebido'];
             const subtotal = pedido.subtotal !== undefined ? pedido.subtotal : pedido.itens.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
             const totalGeral = pedido.total + (pedido.valorFrete || 0);
+            
+            let cpfHtml = '';
+            if (pedido.solicitaCpf && pedido.cpf) {
+                cpfHtml = `<p><strong>CPF na Nota:</strong> ${pedido.cpf}</p>`;
+            }
+
             let detalhesValoresHtml = `<p>Subtotal: R$ ${subtotal.toFixed(2).replace('.',',')}</p>`;
             if (pedido.desconto > 0) {
                 detalhesValoresHtml += `<p class="text-red-500">Desconto: -R$ ${pedido.desconto.toFixed(2).replace('.',',')}</p>`;
             }
             detalhesValoresHtml += `<p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>`;
+
+            // --- LÓGICA DA MENSAGEM WHATSAPP ---
+            const itensPedido = pedido.itens.map(item => `- ${item.quantidade}x ${item.nome}`).join('\n');
+            const totalPedidoFormatado = totalGeral.toFixed(2).replace('.', ',');
+            let mensagemWhatsApp = `Olá, ${pedido.cliente}! Agradecemos pela sua compra na Agro Ferragem Malafaia.\n\n`;
+            mensagemWhatsApp += `*Resumo do Pedido:*\n`;
+            mensagemWhatsApp += `*ID:* ${id}\n\n`;
+            mensagemWhatsApp += `*Itens:*\n${itensPedido}\n\n`;
+            mensagemWhatsApp += `*Total:* R$ ${totalPedidoFormatado}\n\n`;
+            mensagemWhatsApp += "Qualquer dúvida, estamos à disposição!";
+            const mensagemCodificada = encodeURIComponent(mensagemWhatsApp);
+            const numeroWhatsapp = `55${(pedido.whatsapp || '').replace(/\D/g, '')}`;
+            const urlWhatsApp = `https://wa.me/${numeroWhatsapp}?text=${mensagemCodificada}`;
+            // --- FIM DA LÓGICA ---
+
             pedidoCard.innerHTML = `
                 <div class="flex justify-between items-start">
-                    <div><h4 class="font-bold text-lg">${pedido.cliente}</h4><p class="text-xs text-gray-400 font-mono">${id}</p></div>
+                    <div>
+                        <h4 class="font-bold text-lg">${pedido.cliente}</h4>
+                        <p class="text-xs text-gray-400 font-mono">${id}</p>
+                    </div>
                     <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusAtual.cor}">${statusAtual.texto}</span>
                 </div>
                 <div class="my-3 text-sm space-y-1 border-t border-b py-2">
                     <p><strong>Data:</strong> ${pedido.data.toDate().toLocaleString('pt-BR')}</p>
                     <p><strong>Entrega:</strong> ${pedido.entrega}</p>
                     <p><strong>Pagamento:</strong> ${pedido.pagamento}</p>
+                    ${cpfHtml}
                 </div>
-                <div class="my-2"><p class="font-semibold text-sm">Itens:</p><ul class="list-disc list-inside text-sm pl-2">${pedido.itens.map(item => `<li>${item.quantidade}x ${item.nome}</li>`).join('')}</ul></div>
+                <div class="my-2">
+                    <p class="font-semibold text-sm">Itens:</p>
+                    <ul class="list-disc list-inside text-sm pl-2">${pedido.itens.map(item => `<li>${item.quantidade}x ${item.nome}</li>`).join('')}</ul>
+                </div>
                 <div class="text-right text-sm border-t pt-2">
                     ${detalhesValoresHtml}
                 </div>
                 <p class="text-right font-bold text-lg mt-1">Total: R$ ${totalGeral.toFixed(2).replace('.',',')}</p>
                 <div class="border-t mt-3 pt-3 flex items-center justify-end gap-2 flex-wrap">
+                    <button data-id="${id}" class="edit-pedido-btn text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Editar</button>
                     <button data-id="${id}" class="add-frete-btn text-sm bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded">Frete</button>
-                    <div class="relative"><button data-id="${id}" class="status-btn text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Status</button><div id="status-options-${id}" class="status-options absolute bottom-full mb-2 right-0 bg-white border rounded shadow-lg z-10 hidden">${Object.keys(statusPedido).map(key => `<a href="#" data-id="${id}" data-status="${key}" class="status-link block px-4 py-2 text-sm hover:bg-gray-100">${statusPedido[key].texto}</a>`).join('')}</div></div>
-                    <a href="https://wa.me/55${(pedido.whatsapp || '').replace(/\D/g, '')}" target="_blank" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"><i class="fa-brands fa-whatsapp"></i></a>
+                    <div class="relative">
+                        <button data-id="${id}" class="status-btn text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Status</button>
+                        <div id="status-options-${id}" class="status-options absolute bottom-full mb-2 right-0 bg-white border rounded shadow-lg z-10 hidden">${Object.keys(statusPedido).map(key => `<a href="#" data-id="${id}" data-status="${key}" class="status-link block px-4 py-2 text-sm hover:bg-gray-100">${statusPedido[key].texto}</a>`).join('')}</div>
+                    </div>
+                    <a href="${urlWhatsApp}" target="_blank" class="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"><i class="fa-brands fa-whatsapp"></i></a>
                     <button data-id="${id}" class="print-btn text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-print"></i></button>
                     <button data-id="${id}" class="delete-pedido-btn text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
@@ -234,7 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     const filtrarErenderizar = () => {
-        // Filtro de produtos
         const categoriaFiltro = filtroProdutoCategoriaSelect.value;
         const termoProduto = pesquisaProdutoAdminInput.value.toLowerCase();
         let produtosFiltrados = todosProdutos;
@@ -247,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         renderizarProdutosAdmin(produtosFiltrados);
         
-        // Filtro de pedidos
         const termoPedido = pesquisaPedidoAdminInput.value.toLowerCase();
         const dataInicio = filtroDataInicioInput.value ? new Date(filtroDataInicioInput.value) : null;
         const dataFim = filtroDataFimInput.value ? new Date(filtroDataFimInput.value) : null;
@@ -264,7 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function carregarDados() {
-        // Listener de Categorias (carrega primeiro)
         onSnapshot(query(collection(db, "categorias")), (snapshot) => {
             todasCategorias = {};
             snapshot.docs.forEach(doc => {
@@ -276,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderizarCupons(todosCupons);
         });
         
-        // Listener de Pedidos
         onSnapshot(query(collection(db, "pedidos")), (snapshot) => {
             if (!isFirstLoad) {
                 snapshot.docChanges().forEach(change => {
@@ -298,13 +328,11 @@ document.addEventListener('DOMContentLoaded', () => {
             isFirstLoad = false;
         });
         
-        // Listener de Produtos
         onSnapshot(query(collection(db, "produtos")), (snapshot) => {
             todosProdutos = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
             filtrarErenderizar();
         });
         
-        // Listener de Cupons
         onSnapshot(query(collection(db, "cupons")), (snapshot) => {
             todosCupons = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }))
                 .sort((a, b) => b.data.validade.toMillis() - a.data.validade.toMillis());
@@ -517,6 +545,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function abrirModalEditarPedido(pedidoId) {
+        const pedido = todosPedidos.find(p => p.id === pedidoId)?.data;
+        if (!pedido) return;
+
+        document.getElementById('edit-pedido-id').value = pedidoId;
+        document.getElementById('edit-pedido-cliente').value = pedido.cliente || '';
+        document.getElementById('edit-pedido-endereco').value = pedido.endereco || '';
+        document.getElementById('edit-pedido-whatsapp').value = pedido.whatsapp || '';
+        document.getElementById('edit-pedido-cpf').value = pedido.cpf || '';
+        
+        modalEditPedido.classList.remove('hidden');
+    }
+
+    async function salvarPedidoEditado(e) {
+        e.preventDefault();
+        const pedidoId = document.getElementById('edit-pedido-id').value;
+        if (!pedidoId) return;
+
+        const dadosAtualizados = {
+            cliente: document.getElementById('edit-pedido-cliente').value,
+            endereco: document.getElementById('edit-pedido-endereco').value,
+            whatsapp: document.getElementById('edit-pedido-whatsapp').value,
+            cpf: document.getElementById('edit-pedido-cpf').value,
+            solicitaCpf: !!document.getElementById('edit-pedido-cpf').value 
+        };
+
+        try {
+            const pedidoRef = doc(db, "pedidos", pedidoId);
+            await updateDoc(pedidoRef, dadosAtualizados);
+            alert("Pedido atualizado com sucesso!");
+            modalEditPedido.classList.add('hidden');
+        } catch (error) {
+            console.error("Erro ao atualizar pedido: ", error);
+            alert("Falha ao atualizar o pedido.");
+        }
+    }
+
+
     async function deletarProduto(id) { if (confirm("Excluir este produto?")) { await deleteDoc(doc(db, "produtos", id)); } }
     async function deletarCupom(id) { if (confirm(`Excluir o cupom "${id}"?`)) { await deleteDoc(doc(db, "cupons", id)); } }
     async function deletarPedido(id) { if (confirm("EXCLUIR este pedido? Esta ação não pode ser desfeita.")) { await deleteDoc(doc(db, "pedidos", id)); } }
@@ -557,12 +623,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function exportarParaCSV() {
         let csvContent = "data:text/csv;charset=utf-8,";
-        const headers = ["ID Pedido", "Data", "Cliente", "WhatsApp", "Endereço", "Itens", "Subtotal", "Desconto", "Frete", "Total", "Forma de Pagamento", "Forma de Entrega", "Status", "Cupom"];
+        const headers = ["ID Pedido", "Data", "Cliente", "WhatsApp", "Endereço", "Itens", "Subtotal", "Desconto", "Frete", "Total", "Forma de Pagamento", "Forma de Entrega", "Status", "Cupom", "CPF na Nota"];
         csvContent += headers.join(";") + "\r\n";
         todosPedidos.forEach(({id, data: p}) => {
             const itensString = p.itens.map(i => `${i.quantidade}x ${i.nome}`).join(", ");
             const totalGeral = p.total + (p.valorFrete || 0);
-            const row = [id, p.data.toDate().toLocaleString('pt-BR'), p.cliente, p.whatsapp, `"${p.endereco}"`, `"${itensString}"`, (p.subtotal || p.total).toFixed(2), (p.desconto || 0).toFixed(2), (p.valorFrete || 0).toFixed(2), totalGeral.toFixed(2), p.pagamento, p.entrega, p.status, (p.cupom?.codigo || '')];
+            const row = [id, p.data.toDate().toLocaleString('pt-BR'), p.cliente, p.whatsapp, `"${p.endereco}"`, `"${itensString}"`, (p.subtotal || p.total).toFixed(2), (p.desconto || 0).toFixed(2), (p.valorFrete || 0).toFixed(2), totalGeral.toFixed(2), p.pagamento, p.entrega, p.status, (p.cupom?.codigo || ''), (p.cpf || '')];
             csvContent += row.join(";") + "\r\n";
         });
         const encodedUri = encodeURI(csvContent);
@@ -577,10 +643,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function exportarTodosOsDados() {
         if (todosProdutos.length > 0) {
             let csvContentProdutos = "data:text/csv;charset=utf-8,";
-            const headersProdutos = ["ID", "Nome", "Preco", "UnidadeMedida", "Categoria", "Descricao", "Destaque"];
+            const headersProdutos = ["ID", "Nome", "Preco", "UnidadeMedida", "Categoria", "Descricao", "Destaque", "imageUrl"];
             csvContentProdutos += headersProdutos.join(";") + "\r\n";
             todosProdutos.forEach(({ id, data: p }) => {
-                const row = [id, `"${p.nome}"`, p.preco, p.unidadeMedida, p.categoria, `"${p.descricao || ''}"`, p.destaque || false];
+                const row = [id, `"${p.nome}"`, p.preco, p.unidadeMedida, p.categoria, `"${p.descricao || ''}"`, p.destaque || false, p.imageUrl || ''];
                 csvContentProdutos += row.join(";") + "\r\n";
             });
             const encodedUriProdutos = encodeURI(csvContentProdutos);
@@ -603,14 +669,21 @@ document.addEventListener('DOMContentLoaded', () => {
     exportCsvBtn.addEventListener('click', exportarParaCSV);
     pedidosListaEl.addEventListener('click', (e) => {
         const target = e.target;
+        const editBtn = target.closest('.edit-pedido-btn');
+        if (editBtn) { abrirModalEditarPedido(editBtn.dataset.id); return; }
+
         const statusBtn = target.closest('.status-btn');
         if (statusBtn) { document.querySelectorAll('.status-options').forEach(el => el.classList.add('hidden')); document.getElementById(`status-options-${statusBtn.dataset.id}`).classList.toggle('hidden'); return; }
+        
         const statusLink = target.closest('.status-link');
         if (statusLink) { e.preventDefault(); mudarStatusPedido(statusLink.dataset.id, statusLink.dataset.status); return; }
+        
         const printBtn = target.closest('.print-btn');
         if (printBtn) { imprimirPedido(printBtn.dataset.id); return; }
+        
         const deleteBtn = target.closest('.delete-pedido-btn');
         if (deleteBtn) { deletarPedido(deleteBtn.dataset.id); return; }
+        
         const freteBtn = target.closest('.add-frete-btn');
         if (freteBtn) { abrirModalFrete(freteBtn.dataset.id); return; }
     });
@@ -644,6 +717,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportAllDataBtn = document.getElementById('export-all-data-btn');
     if (exportAllDataBtn) { exportAllDataBtn.addEventListener('click', exportarTodosOsDados); }
     
+    formEditPedido.addEventListener('submit', salvarPedidoEditado);
+    cancelEditPedidoBtn.addEventListener('click', () => modalEditPedido.classList.add('hidden'));
+
     // --- INICIALIZAÇÃO ---
     popularIconesSelect();
     carregarDados();
