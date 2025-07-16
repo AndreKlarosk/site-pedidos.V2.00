@@ -73,16 +73,29 @@ document.addEventListener('DOMContentLoaded', () => {
         produtos.forEach(({ id, data: produto }) => {
             const produtoCard = document.createElement('div');
             produtoCard.dataset.id = id;
-            produtoCard.className = `produto-card cursor-pointer bg-white rounded-lg shadow-md overflow-hidden flex flex-col items-center text-center p-4 transform hover:scale-105 transition-transform duration-300 ${produto.destaque ? 'border-2 border-yellow-400' : ''}`;
+            produtoCard.className = `produto-card cursor-pointer bg-white rounded-lg shadow-md overflow-hidden flex flex-col justify-between transform hover:scale-105 transition-transform duration-300 ${produto.destaque ? 'border-2 border-yellow-400' : ''}`;
+            
             const icone = categorias[produto.categoria]?.icone || 'fa-solid fa-box';
             const nomeCategoria = categorias[produto.categoria]?.nome || 'Sem Categoria';
+            const placeholderImg = 'logo.png';
+            
+            // Se tiver imagem, mostra a imagem. Senão, mostra o ícone.
+            const imagemOuIconeHtml = produto.imageUrl 
+                ? `<img src="${produto.imageUrl}" alt="${produto.nome}" class="w-full h-48 object-cover" onerror="this.onerror=null;this.src='${placeholderImg}';">`
+                : `<div class="w-full h-48 flex items-center justify-center bg-gray-100"><i class="${icone} text-6xl text-gray-400"></i></div>`;
 
             produtoCard.innerHTML = `
-                ${produto.destaque ? '<div class="absolute top-0 right-0 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">DESTAQUE</div>' : ''}
-                <div class="text-5xl text-primary my-4 pointer-events-none"><i class="${icone}"></i></div>
-                <h3 class="text-lg font-semibold h-12 pointer-events-none">${produto.nome}</h3>
-                <p class="text-gray-500 text-sm mb-2 pointer-events-none">${nomeCategoria}</p>
-                <p class="text-primary-hover font-bold text-2xl my-2 pointer-events-none">R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}</p>
+                <div>
+                    ${produto.destaque ? '<div class="absolute top-0 right-0 bg-yellow-400 text-white text-xs font-bold px-2 py-1 rounded-bl-lg">DESTAQUE</div>' : ''}
+                    ${imagemOuIconeHtml}
+                    <div class="p-4">
+                        <h3 class="text-lg font-semibold h-12">${produto.nome}</h3>
+                        <p class="text-gray-500 text-sm mb-2">${nomeCategoria}</p>
+                    </div>
+                </div>
+                <div class="p-4 pt-0">
+                     <p class="text-primary-hover font-bold text-2xl my-2">R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}</p>
+                </div>
             `;
             containerEl.appendChild(produtoCard);
         });
@@ -112,13 +125,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function adicionarAoCarrinho(produtoId) {
         const produtoData = todosProdutos.find(p => p.id === produtoId);
         if (!produtoData) return;
-        const { data: produto } = produtoData;
+        
         const itemExistente = carrinho.find(item => item.id === produtoId);
+        
         if (itemExistente) {
             itemExistente.quantidade++;
         } else {
-            carrinho.push({ id: produtoId, ...produto, quantidade: 1 });
+            const produto = produtoData.data;
+            carrinho.push({
+                id: produtoId,
+                nome: produto.nome,
+                preco: produto.preco,
+                unidadeMedida: produto.unidadeMedida,
+                categoria: produto.categoria,
+                imageUrl: produto.imageUrl || '',
+                quantidade: 1
+            });
         }
+        
         localStorage.setItem('carrinho', JSON.stringify(carrinho));
         updateCartCounter();
         animateCart();
@@ -129,11 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!produtoData) return;
         const { id, data: produto } = produtoData;
         
-        const icone = categorias[produto.categoria]?.icone || 'fa-solid fa-box';
         const nomeCategoria = categorias[produto.categoria]?.nome || 'Sem Categoria';
+        const placeholderImg = 'logo.png';
 
         document.getElementById('modal-produto-nome').textContent = produto.nome;
-        document.getElementById('modal-produto-icone').className = `text-9xl text-primary ${icone}`;
+        document.getElementById('modal-produto-imagem').src = produto.imageUrl || placeholderImg;
+        document.getElementById('modal-produto-imagem').onerror = function() { this.src = placeholderImg; };
         document.getElementById('modal-produto-preco').textContent = `R$ ${produto.preco.toFixed(2).replace('.', ',')} / ${produto.unidadeMedida}`;
         document.getElementById('modal-produto-categoria').textContent = nomeCategoria;
         document.getElementById('modal-produto-descricao').textContent = produto.descricao || 'Este produto não possui uma descrição detalhada.';
