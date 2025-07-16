@@ -152,9 +152,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const produtosOrdenados = [...produtos.filter(p => p.data.destaque), ...produtos.filter(p => !p.data.destaque)];
         produtosOrdenados.forEach(({ id, data: p }) => {
             const item = document.createElement('div');
-            const categoriaInfo = todasCategorias[p.categoria] || { icone: 'fa-solid fa-box' };
             item.className = 'bg-white p-3 rounded-md shadow-sm flex justify-between items-center';
-            item.innerHTML = `<div class="flex items-center gap-3"><i class="${categoriaInfo.icone} w-5 h-5 text-center"></i><div><p class="font-semibold flex items-center gap-2">${p.nome} ${p.destaque ? '<i class="fa-solid fa-star text-yellow-400"></i>' : ''}</p><p class="text-sm text-gray-500">R$ ${p.preco.toFixed(2).replace('.',',')} / ${p.unidadeMedida}</p></div></div><div class="flex gap-2"><button data-id="${id}" class="edit-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-pencil pointer-events-none"></i></button><button data-id="${id}" class="delete-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-trash-can pointer-events-none"></i></button></div>`;
+            const placeholderImg = 'logo.png';
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <img src="${p.imageUrl || placeholderImg}" alt="${p.nome}" class="w-12 h-12 object-cover rounded-md bg-gray-200">
+                    <div>
+                        <p class="font-semibold flex items-center gap-2">${p.nome} ${p.destaque ? '<i class="fa-solid fa-star text-yellow-400"></i>' : ''}</p>
+                        <p class="text-sm text-gray-500">R$ ${p.preco.toFixed(2).replace('.',',')} / ${p.unidadeMedida}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button data-id="${id}" class="edit-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-pencil pointer-events-none"></i></button>
+                    <button data-id="${id}" class="delete-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-trash-can pointer-events-none"></i></button>
+                </div>`;
             produtosAdminListaEl.appendChild(item);
         });
     };
@@ -310,7 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
             unidadeMedida: document.getElementById('unidade-medida').value.trim(),
             categoria: document.getElementById('categoria-produto').value,
             descricao: descricaoProdutoInput.value.trim(),
-            destaque: destaqueCheckbox.checked
+            destaque: destaqueCheckbox.checked,
+            imageUrl: document.getElementById('imagem-url-produto').value.trim()
         };
         if (!produto.nome || isNaN(produto.preco) || !produto.unidadeMedida || !produto.categoria) { alert("Preencha os campos Nome, Preço, Unidade e Categoria."); return; }
         try {
@@ -380,6 +392,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!produto) return;
         document.getElementById('produto-id').value = id;
         document.getElementById('nome-produto').value = produto.nome;
+        document.getElementById('imagem-url-produto').value = produto.imageUrl || '';
         document.getElementById('preco-produto').value = produto.preco;
         document.getElementById('unidade-medida').value = produto.unidadeMedida;
         document.getElementById('categoria-produto').value = produto.categoria;
