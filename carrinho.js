@@ -137,9 +137,25 @@ document.addEventListener('DOMContentLoaded', () => {
             carrinhoItensListaEl.innerHTML = '';
             carrinho.forEach((item, index) => {
                 const icone = categorias[item.categoria]?.icone || 'fa-solid fa-box';
+                const placeholderImg = 'logo.png';
+                const imagemOuIconeHtml = item.imageUrl
+                    ? `<img src="${item.imageUrl}" alt="${item.nome}" class="w-16 h-16 object-cover rounded-md" onerror="this.onerror=null;this.src='${placeholderImg}';">`
+                    : `<div class="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-md"><i class="${icone} text-3xl text-gray-400"></i></div>`;
+
                 const itemEl = document.createElement('div');
                 itemEl.className = 'flex items-center justify-between py-4 border-b';
-                itemEl.innerHTML = `<div class="flex items-center gap-4"><i class="${icone} text-3xl text-primary w-8 text-center"></i><div><p class="font-semibold">${item.nome}</p><p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p></div></div><div class="flex items-center gap-3"><input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md"><button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button></div>`;
+                itemEl.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        ${imagemOuIconeHtml}
+                        <div>
+                            <p class="font-semibold">${item.nome}</p>
+                            <p class="text-sm text-gray-600">R$ ${item.preco.toFixed(2).replace('.',',')} / ${item.unidadeMedida}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="number" value="${item.quantidade}" min="1" data-index="${index}" class="qtd-input w-16 text-center border rounded-md">
+                        <button data-index="${index}" class="remove-btn text-red-500 hover:text-red-700"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
                 carrinhoItensListaEl.appendChild(itemEl);
             });
         }
@@ -160,8 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         renderizarCarrinho();
     }
-
-    // --- FUNÇÃO APLICAR CUPOM REESTRUTURADA ---
+    
     async function aplicarCupom() {
         const codigo = cupomInput.value.trim().toUpperCase();
         if (!codigo) return;
@@ -174,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const cupomRef = doc(db, "cupons", codigo);
             const docSnap = await getDoc(cupomRef);
 
-            // 1. O cupom existe?
             if (!docSnap.exists()) {
                 resetarCupomState('Cupom inválido.', 'text-red-600');
                 return;
@@ -184,7 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const hoje = new Date();
             const validade = cupom.validade.toDate();
             
-            // 2. O cupom expirou?
             if (validade < hoje) {
                 resetarCupomState('Este cupom expirou.', 'text-red-600');
                 return;
@@ -192,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.quantidade), 0);
 
-            // 3. O carrinho atingiu o valor mínimo?
             if (cupom.valorMinimo > 0 && subtotal < cupom.valorMinimo) {
                 resetarCupomState(`Pedido mínimo de R$ ${cupom.valorMinimo.toFixed(2).replace('.',',')} para este cupom.`, 'text-red-600');
                 return;
@@ -202,13 +214,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const temItemElegivel = categoriasAplicaveis.includes('todos') || 
                                    carrinho.some(item => categoriasAplicaveis.includes(item.categoria));
             
-            // 4. O cupom é aplicável aos itens do carrinho?
             if (!temItemElegivel) {
                 resetarCupomState('Cupom não aplicável a estes itens.', 'text-red-600');
                 return;
             }
             
-            // SUCESSO! Todas as condições foram atendidas.
             cupomAplicado = { id: docSnap.id, ...cupom };
             cupomFeedback.textContent = 'Cupom aplicado!';
             cupomFeedback.className = 'text-sm mt-1 h-4 text-green-600';
@@ -219,7 +229,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Erro ao aplicar cupom:", error);
             resetarCupomState('Erro ao validar o cupom.', 'text-red-600');
         } finally {
-            // Apenas re-calcula o total, pois o estado já foi definido.
             calcularErenderizarTotal();
         }
     }
