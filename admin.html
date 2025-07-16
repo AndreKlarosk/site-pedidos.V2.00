@@ -165,6 +165,34 @@
             </section>
         </main>
     </div>
+    <div id="modal-edit-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Editar Pedido</h2>
+            <form id="form-edit-pedido" class="space-y-4">
+                <input type="hidden" id="edit-pedido-id">
+                <div>
+                    <label for="edit-pedido-cliente" class="block text-sm font-medium text-gray-700">Nome do Cliente</label>
+                    <input type="text" id="edit-pedido-cliente" required class="mt-1 block w-full px-3 py-2 border rounded-md">
+                </div>
+                <div>
+                    <label for="edit-pedido-endereco" class="block text-sm font-medium text-gray-700">Endereço</label>
+                    <input type="text" id="edit-pedido-endereco" required class="mt-1 block w-full px-3 py-2 border rounded-md">
+                </div>
+                <div>
+                    <label for="edit-pedido-whatsapp" class="block text-sm font-medium text-gray-700">WhatsApp</label>
+                    <input type="text" id="edit-pedido-whatsapp" required class="mt-1 block w-full px-3 py-2 border rounded-md">
+                </div>
+                <div>
+                    <label for="edit-pedido-cpf" class="block text-sm font-medium text-gray-700">CPF (se houver)</label>
+                    <input type="text" id="edit-pedido-cpf" class="mt-1 block w-full px-3 py-2 border rounded-md">
+                </div>
+                <div class="flex gap-4 mt-6">
+                    <button type="submit" class="flex-1 bg-indigo-600 text-white font-bold py-2 px-6 rounded-md hover:bg-indigo-700">Salvar Alterações</button>
+                    <button type="button" id="cancel-edit-pedido-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <div id="modal-novo-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto"><div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4"><i class="fa-solid fa-bell fa-shake text-3xl text-blue-600"></i></div><h2 class="text-2xl font-bold">Novo Pedido Recebido!</h2><div id="novo-pedido-info" class="text-gray-600 my-4 text-left"></div><div class="flex gap-4 mt-6"><button id="visualizar-pedido-btn" class="flex-1 bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700">Visualizar</button><button id="fechar-novo-pedido-modal-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Fechar</button></div></div>
