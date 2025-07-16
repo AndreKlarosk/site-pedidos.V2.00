@@ -11,16 +11,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script>
-        // Configuração do Tailwind para usar as cores da sua logo
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        'primary': '#F97316', // Laranja
+                        'primary': '#F97316', 
                         'primary-hover': '#EA580C',
-                        'secondary': '#16A34A', // Verde
+                        'secondary': '#16A34A', 
                         'secondary-hover': '#15803D',
-                        'accent': '#DC2626', // Vermelho
+                        'accent': '#DC2626',
                     }
                 }
             }
@@ -78,8 +77,8 @@
             </header>
             <main class="p-6 overflow-y-auto">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="text-center flex items-center justify-center">
-                        <i id="modal-produto-icone" class="text-9xl text-primary"></i>
+                    <div class="flex items-center justify-center bg-gray-100 rounded-lg p-4">
+                        <img id="modal-produto-imagem" src="" alt="Imagem do Produto" class="max-h-64 w-auto object-contain">
                     </div>
                     <div>
                         <p id="modal-produto-categoria" class="text-sm font-semibold text-primary mb-2"></p>
