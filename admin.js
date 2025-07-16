@@ -127,17 +127,31 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pedido.desconto > 0) {
                 detalhesValoresHtml += `<p class="text-red-500">Desconto: -R$ ${pedido.desconto.toFixed(2).replace('.',',')}</p>`;
             }
-            detalhesValoresHtml += `<p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>`;
+            if (pedido.valorFrete > 0) {
+                detalhesValoresHtml += `<p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>`;
+            }
 
-            // --- LÓGICA DA MENSAGEM WHATSAPP ---
+            // --- LÓGICA DA MENSAGEM WHATSAPP (ATUALIZADA) ---
             const itensPedido = pedido.itens.map(item => `- ${item.quantidade}x ${item.nome}`).join('\n');
-            const totalPedidoFormatado = totalGeral.toFixed(2).replace('.', ',');
             let mensagemWhatsApp = `Olá, ${pedido.cliente}! Agradecemos pela sua compra na Agro Ferragem Malafaia.\n\n`;
             mensagemWhatsApp += `*Resumo do Pedido:*\n`;
             mensagemWhatsApp += `*ID:* ${id}\n\n`;
-            mensagemWhatsApp += `*Itens:*\n${itensPedido}\n\n`;
-            mensagemWhatsApp += `*Total:* R$ ${totalPedidoFormatado}\n\n`;
+            mensagemWhatsApp += `*Itens:*\n${itensPedido}\n`;
+            mensagemWhatsApp += `----------------------------------\n`;
+            mensagemWhatsApp += `*Subtotal:* R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
+
+            if (pedido.desconto > 0 && pedido.cupom?.codigo) {
+                mensagemWhatsApp += `*Cupom (${pedido.cupom.codigo}):* -R$ ${pedido.desconto.toFixed(2).replace('.', ',')}\n`;
+            }
+            if (pedido.valorFrete > 0) {
+                mensagemWhatsApp += `*Frete:* R$ ${pedido.valorFrete.toFixed(2).replace('.', ',')}\n`;
+            }
+
+            mensagemWhatsApp += `*Total:* R$ ${totalGeral.toFixed(2).replace('.', ',')}\n`;
+            mensagemWhatsApp += `----------------------------------\n`;
+            mensagemWhatsApp += `*Forma de Pagamento:* ${pedido.pagamento}\n\n`;
             mensagemWhatsApp += "Qualquer dúvida, estamos à disposição!";
+            
             const mensagemCodificada = encodeURIComponent(mensagemWhatsApp);
             const numeroWhatsapp = `55${(pedido.whatsapp || '').replace(/\D/g, '')}`;
             const urlWhatsApp = `https://wa.me/${numeroWhatsapp}?text=${mensagemCodificada}`;
@@ -666,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.removeItem('isAdminAuthenticated');
         window.location.href = 'login.html';
     });
-    exportCsvBtn.addEventListener('click', exportarParaCSV);
+    exportCsvBtn.addEventListener('click', exportarTodosOsDados);
     pedidosListaEl.addEventListener('click', (e) => {
         const target = e.target;
         const editBtn = target.closest('.edit-pedido-btn');
