@@ -50,6 +50,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cupomInput = document.getElementById('cupom-input');
     const aplicarCupomBtn = document.getElementById('aplicar-cupom-btn');
     const cupomFeedback = document.getElementById('cupom-feedback');
+    const cpfNotaCheckbox = document.getElementById('cpf-nota-checkbox');
+    const cpfNotaInput = document.getElementById('cpf-nota-input');
 
     // --- FUNÇÕES ---
 
@@ -240,8 +242,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const whatsapp = document.getElementById('whatsapp').value.trim();
         const pagamento = formaPagamentoSelect.value;
         const entrega = formaEntregaSelect.value;
+        const solicitaCpf = cpfNotaCheckbox.checked;
+        const cpf = cpfNotaInput.value.trim();
 
-        if (!nome || !endereco || !whatsapp || !pagamento || !entrega) { alert("Por favor, preencha todos os campos do formulário."); return; }
+        if (!nome || !endereco || !whatsapp || !pagamento || !entrega) {
+            alert("Por favor, preencha todos os campos do formulário.");
+            return;
+        }
+
+        if(solicitaCpf && !cpf) {
+            alert("Por favor, preencha o campo CPF.");
+            return;
+        }
         
         finalizarPedidoBtn.disabled = true;
         finalizarPedidoBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Enviando...';
@@ -286,6 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 desconto: desconto,
                 total: total,
                 valorFrete: 0,
+                solicitaCpf: solicitaCpf,
+                cpf: solicitaCpf ? cpf : '',
                 status: 'Recebido', data: serverTimestamp()
             };
 
@@ -349,6 +363,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- EVENT LISTENERS ---
+    cpfNotaCheckbox.addEventListener('change', () => {
+        cpfNotaInput.classList.toggle('hidden', !cpfNotaCheckbox.checked);
+        if(cpfNotaCheckbox.checked) {
+            cpfNotaInput.required = true;
+        } else {
+            cpfNotaInput.required = false;
+        }
+    });
+
     carrinhoItensListaEl.addEventListener('change', (e) => {
         if (e.target.classList.contains('qtd-input')) {
             atualizarQuantidade(e.target.dataset.index, parseInt(e.target.value));
