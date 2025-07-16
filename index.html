@@ -134,8 +134,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, query, doc, getDoc };
+        import { getFirestore, collection, onSnapshot, query, doc, getDoc, where, updateDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, query, doc, getDoc, where, updateDoc, setDoc, increment };
     </script>
     <script src="script.js"></script>
 </body>
