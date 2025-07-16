@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot } = window.firebase;
+    const { initializeApp, getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, query, onSnapshot, updateDoc, setDoc, increment } = window.firebase;
     let db;
     try {
         const app = initializeApp(firebaseConfig);
@@ -351,6 +351,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    async function trackCartVisit() {
+        if (!sessionStorage.getItem('cartVisited')) {
+            sessionStorage.setItem('cartVisited', 'true');
+            const analyticsRef = doc(db, "analytics", "siteMetrics");
+            try {
+                await updateDoc(analyticsRef, {
+                    visitasCarrinho: increment(1)
+                });
+            } catch (error) {
+                 if (error.code === 'not-found') {
+                    await setDoc(analyticsRef, { visitasSite: 0, visitasCarrinho: 1 }, { merge: true });
+                }
+            }
+        }
+    }
+
     function iniciarApp() {
          onSnapshot(query(collection(db, "categorias")), (snapshot) => {
             categorias = {};
@@ -360,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderizarCarrinho();
         });
         popularSeletores();
+        trackCartVisit();
     }
 
     // --- EVENT LISTENERS ---
