@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messagingSenderId: "624610926773",
         appId: "1:624610926773:web:6540a1ec6c1fca18819efc"
     };
-    const { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs } = window.firebase;
+    const { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs, increment } = window.firebase;
     let db;
     try {
         const app = initializeApp(firebaseConfig);
@@ -84,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalEditPedido = document.getElementById('modal-edit-pedido');
     const formEditPedido = document.getElementById('form-edit-pedido');
     const cancelEditPedidoBtn = document.getElementById('cancel-edit-pedido-btn');
+    const siteVisitsEl = document.getElementById('site-visits');
+    const cartVisitsEl = document.getElementById('cart-visits');
+    const filtroProdutoStatusSelect = document.getElementById('filtro-produto-status');
+
 
     // --- FUNÇÕES ---
 
@@ -127,12 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pedido.desconto > 0) {
                 detalhesValoresHtml += `<p class="text-red-500">Desconto: -R$ ${pedido.desconto.toFixed(2).replace('.',',')}</p>`;
             }
-            if (pedido.valorFrete > 0) {
+             if (pedido.valorFrete > 0) {
                 detalhesValoresHtml += `<p>Frete: R$ ${(pedido.valorFrete || 0).toFixed(2).replace('.',',')}</p>`;
             }
 
-            // --- LÓGICA DA MENSAGEM WHATSAPP (ATUALIZADA) ---
             const itensPedido = pedido.itens.map(item => `- ${item.quantidade}x ${item.nome}`).join('\n');
+            const totalPedidoFormatado = totalGeral.toFixed(2).replace('.', ',');
             let mensagemWhatsApp = `Olá, ${pedido.cliente}! Agradecemos pela sua compra na Agro Ferragem Malafaia.\n\n`;
             mensagemWhatsApp += `*Resumo do Pedido:*\n`;
             mensagemWhatsApp += `*ID:* ${id}\n\n`;
@@ -147,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensagemWhatsApp += `*Frete:* R$ ${pedido.valorFrete.toFixed(2).replace('.', ',')}\n`;
             }
 
-            mensagemWhatsApp += `*Total:* R$ ${totalGeral.toFixed(2).replace('.', ',')}\n`;
+            mensagemWhatsApp += `*Total:* R$ ${totalPedidoFormatado}\n`;
             mensagemWhatsApp += `----------------------------------\n`;
             mensagemWhatsApp += `*Forma de Pagamento:* ${pedido.pagamento}\n\n`;
             mensagemWhatsApp += "Qualquer dúvida, estamos à disposição!";
@@ -155,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const mensagemCodificada = encodeURIComponent(mensagemWhatsApp);
             const numeroWhatsapp = `55${(pedido.whatsapp || '').replace(/\D/g, '')}`;
             const urlWhatsApp = `https://wa.me/${numeroWhatsapp}?text=${mensagemCodificada}`;
-            // --- FIM DA LÓGICA ---
 
             pedidoCard.innerHTML = `
                 <div class="flex justify-between items-start">
@@ -200,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const produtosOrdenados = [...produtos.filter(p => p.data.destaque), ...produtos.filter(p => !p.data.destaque)];
         produtosOrdenados.forEach(({ id, data: p }) => {
             const item = document.createElement('div');
-            item.className = 'bg-white p-3 rounded-md shadow-sm flex justify-between items-center';
+            item.className = `bg-white p-3 rounded-md shadow-sm flex justify-between items-center ${p.ativo === false ? 'opacity-50' : ''}`;
             const placeholderImg = 'logo.png';
             item.innerHTML = `
                 <div class="flex items-center gap-3">
@@ -210,7 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <p class="text-sm text-gray-500">R$ ${p.preco.toFixed(2).replace('.',',')} / ${p.unidadeMedida}</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex items-center gap-4">
+                    <label class="switch" title="${p.ativo !== false ? 'Produto Ativo' : 'Produto Inativo'}">
+                        <input type="checkbox" class="status-toggle" data-id="${id}" ${p.ativo !== false ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
                     <button data-id="${id}" class="edit-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-pencil pointer-events-none"></i></button>
                     <button data-id="${id}" class="delete-btn p-2 hover:bg-gray-200 rounded-full"><i class="fa-solid fa-trash-can pointer-events-none"></i></button>
                 </div>`;
@@ -282,10 +289,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     const filtrarErenderizar = () => {
+        const statusFiltro = filtroProdutoStatusSelect.value;
         const categoriaFiltro = filtroProdutoCategoriaSelect.value;
         const termoProduto = pesquisaProdutoAdminInput.value.toLowerCase();
         let produtosFiltrados = todosProdutos;
 
+        if (statusFiltro === 'ativos') {
+            produtosFiltrados = produtosFiltrados.filter(p => p.data.ativo !== false);
+        } else if (statusFiltro === 'inativos') {
+            produtosFiltrados = produtosFiltrados.filter(p => p.data.ativo === false);
+        }
+        
         if (categoriaFiltro) {
             produtosFiltrados = produtosFiltrados.filter(p => p.data.categoria === categoriaFiltro);
         }
@@ -308,6 +322,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderizarPedidos(pedidosFiltrados);
     };
+
+    function carregarAnalytics() {
+        const analyticsRef = doc(db, "analytics", "siteMetrics");
+        onSnapshot(analyticsRef, (doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                siteVisitsEl.textContent = data.visitasSite || 0;
+                cartVisitsEl.textContent = data.visitasCarrinho || 0;
+            } else {
+                siteVisitsEl.textContent = 0;
+                cartVisitsEl.textContent = 0;
+            }
+        });
+    }
 
     function carregarDados() {
         onSnapshot(query(collection(db, "categorias")), (snapshot) => {
@@ -357,6 +385,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function salvarProduto(e) {
         e.preventDefault();
         const id = document.getElementById('produto-id').value;
+        
+        let statusAtivo;
+        if (id) {
+            const produtoExistente = todosProdutos.find(p => p.id === id)?.data;
+            statusAtivo = produtoExistente?.ativo !== undefined ? produtoExistente.ativo : true;
+        } else {
+            statusAtivo = true;
+        }
+
         const produto = {
             nome: document.getElementById('nome-produto').value.trim(),
             preco: parseFloat(document.getElementById('preco-produto').value),
@@ -364,7 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
             categoria: document.getElementById('categoria-produto').value,
             descricao: descricaoProdutoInput.value.trim(),
             destaque: destaqueCheckbox.checked,
-            imageUrl: document.getElementById('imagem-url-produto').value.trim()
+            imageUrl: document.getElementById('imagem-url-produto').value.trim(),
+            ativo: statusAtivo 
         };
         if (!produto.nome || isNaN(produto.preco) || !produto.unidadeMedida || !produto.categoria) { alert("Preencha os campos Nome, Preço, Unidade e Categoria."); return; }
         try {
@@ -657,10 +695,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function exportarTodosOsDados() {
         if (todosProdutos.length > 0) {
             let csvContentProdutos = "data:text/csv;charset=utf-8,";
-            const headersProdutos = ["ID", "Nome", "Preco", "UnidadeMedida", "Categoria", "Descricao", "Destaque", "imageUrl"];
+            const headersProdutos = ["ID", "Nome", "Preco", "UnidadeMedida", "Categoria", "Descricao", "Destaque", "imageUrl", "Ativo"];
             csvContentProdutos += headersProdutos.join(";") + "\r\n";
             todosProdutos.forEach(({ id, data: p }) => {
-                const row = [id, `"${p.nome}"`, p.preco, p.unidadeMedida, p.categoria, `"${p.descricao || ''}"`, p.destaque || false, p.imageUrl || ''];
+                const row = [id, `"${p.nome}"`, p.preco, p.unidadeMedida, p.categoria, `"${p.descricao || ''}"`, p.destaque || false, p.imageUrl || '', p.ativo];
                 csvContentProdutos += row.join(";") + "\r\n";
             });
             const encodedUriProdutos = encodeURI(csvContentProdutos);
@@ -705,11 +743,34 @@ document.addEventListener('DOMContentLoaded', () => {
     formAddProduto.addEventListener('submit', salvarProduto);
     pesquisaProdutoAdminInput.addEventListener('input', filtrarErenderizar);
     filtroProdutoCategoriaSelect.addEventListener('change', filtrarErenderizar);
+    filtroProdutoStatusSelect.addEventListener('change', filtrarErenderizar);
     pesquisaPedidoAdminInput.addEventListener('input', filtrarErenderizar);
     filtroDataInicioInput.addEventListener('change', filtrarErenderizar);
     filtroDataFimInput.addEventListener('change', filtrarErenderizar);
     cancelEditBtn.addEventListener('click', resetarFormulario);
-    produtosAdminListaEl.addEventListener('click', (e) => { const btn = e.target.closest('button'); if (!btn) return; if (btn.classList.contains('edit-btn')) editarProduto(btn.dataset.id); if (btn.classList.contains('delete-btn')) deletarProduto(btn.dataset.id); });
+    produtosAdminListaEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('button'); 
+        if (!btn) return; 
+        if (btn.classList.contains('edit-btn')) editarProduto(btn.dataset.id); 
+        if (btn.classList.contains('delete-btn')) deletarProduto(btn.dataset.id); 
+    });
+    produtosAdminListaEl.addEventListener('change', async (e) => {
+        if (e.target.classList.contains('status-toggle')) {
+            const produtoId = e.target.dataset.id;
+            const novoStatus = e.target.checked;
+            try {
+                const produtoRef = doc(db, "produtos", produtoId);
+                await updateDoc(produtoRef, {
+                    ativo: novoStatus
+                });
+            } catch (error) {
+                console.error("Erro ao atualizar status do produto: ", error);
+                alert('Não foi possível atualizar o status.');
+                e.target.checked = !novoStatus;
+            }
+        }
+    });
+
     fecharNovoPedidoModalBtn.addEventListener('click', () => modalNovoPedido.classList.add('hidden'));
     visualizarPedidoBtn.addEventListener('click', (e) => { const id = e.target.dataset.id; const el = document.getElementById(`pedido-${id}`); if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('highlight'); setTimeout(() => el.classList.remove('highlight'), 2000); } modalNovoPedido.classList.add('hidden'); });
     formFrete.addEventListener('submit', salvarFrete);
@@ -737,6 +798,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO ---
     popularIconesSelect();
     carregarDados();
+    carregarAnalytics();
     document.body.addEventListener('click', async () => {
         await Tone.start();
     }, { once: true });
