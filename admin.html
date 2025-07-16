@@ -36,6 +36,12 @@
             100% { background-color: transparent; }
         }
         #cupom-categorias { height: 100px; }
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #22c55e; }
+        input:checked + .slider:before { transform: translateX(26px); }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
@@ -51,10 +57,12 @@
             <p class="text-gray-600 mt-2">Gerencie sua loja, produtos e pedidos.</p>
         </header>
 
-        <section id="dashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <section id="dashboard" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-receipt text-3xl text-blue-500"></i><div><p class="text-gray-500 text-sm">Pedidos Hoje</p><p id="pedidos-hoje" class="text-2xl font-bold">0</p></div></div>
             <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-dollar-sign text-3xl text-green-500"></i><div><p class="text-gray-500 text-sm">Faturamento Hoje</p><p id="faturamento-hoje" class="text-2xl font-bold">R$ 0,00</p></div></div>
-            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-star text-3xl text-yellow-500"></i><div><p class="text-gray-500 text-sm">Produto Mais Pedido</p><p id="produto-mais-pedido" class="text-xl font-bold truncate">--</p></div></div>
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-star text-3xl text-yellow-500"></i><div class="min-w-0"><p class="text-gray-500 text-sm">Produto Mais Pedido</p><p id="produto-mais-pedido" class="text-xl font-bold truncate">--</p></div></div>
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-globe text-3xl text-purple-500"></i><div><p class="text-gray-500 text-sm">Visitas ao Site</p><p id="site-visits" class="text-2xl font-bold">0</p></div></div>
+            <div class="bg-white p-5 rounded-lg shadow-md flex items-center gap-4"><i class="fa-solid fa-shopping-cart text-3xl text-pink-500"></i><div><p class="text-gray-500 text-sm">Visitas ao Carrinho</p><p id="cart-visits" class="text-2xl font-bold">0</p></div></div>
         </section>
 
         <section id="relatorios" class="mb-8 bg-white p-6 rounded-lg shadow-md">
@@ -99,7 +107,12 @@
                     </form>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                    <select id="filtro-produto-categoria" class="w-full sm:w-1/2 px-4 py-2 border rounded-lg"></select>
+                    <select id="filtro-produto-status" class="w-full sm:w-auto px-4 py-2 border rounded-lg">
+                        <option value="todos">Todos os Status</option>
+                        <option value="ativos" selected>Apenas Ativos</option>
+                        <option value="inativos">Apenas Inativos</option>
+                    </select>
+                    <select id="filtro-produto-categoria" class="w-full sm:w-auto px-4 py-2 border rounded-lg"></select>
                     <input type="text" id="pesquisa-produto-admin" placeholder="Pesquisar produtos..." class="w-full sm:w-1/2 px-4 py-2 border rounded-lg">
                 </div>
                 <div id="produtos-admin-lista" class="space-y-3 max-h-96 overflow-y-auto pr-2 mb-8"></div>
@@ -165,6 +178,7 @@
             </section>
         </main>
     </div>
+
     <div id="modal-edit-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg mx-auto">
             <h2 class="text-2xl font-bold mb-4">Editar Pedido</h2>
@@ -193,7 +207,6 @@
             </form>
         </div>
     </div>
-
     <div id="modal-novo-pedido" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
         <div class="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm mx-auto"><div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-4"><i class="fa-solid fa-bell fa-shake text-3xl text-blue-600"></i></div><h2 class="text-2xl font-bold">Novo Pedido Recebido!</h2><div id="novo-pedido-info" class="text-gray-600 my-4 text-left"></div><div class="flex gap-4 mt-6"><button id="visualizar-pedido-btn" class="flex-1 bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700">Visualizar</button><button id="fechar-novo-pedido-modal-btn" class="flex-1 bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-md hover:bg-gray-400">Fechar</button></div></div>
     </div>
@@ -213,11 +226,11 @@
             </form>
         </div>
     </div>
-
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs };
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebase = { initializeApp, getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, query, writeBatch, where, getDocs, increment };
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script src="admin.js"></script>
