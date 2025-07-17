@@ -7,8 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const formasEntrega = {
         'buscar': 'Vou buscar na loja',
-        'tele': 'Tele-entrega (Moto)',
-        'frete': 'Frete (Carro)'
+        'tele': 'Tele-entrega'
     };
     let categorias = {}; // Será preenchido pelo Firebase
 
